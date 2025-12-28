@@ -1,0 +1,37 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+python-dotenv
+pymysql
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
+qrcode[pil]
+
+# FastAPI ve Web Server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Database - MySQL
+sqlalchemy==2.0.25
+pymysql==1.1.0
+cryptography==42.0.0
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.0
+
+# QR Code
+qrcode[pil]==7.4.2
+Pillow
+
+# Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# Utilities
+python-dateutil==2.8.2

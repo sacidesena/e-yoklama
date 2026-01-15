@@ -7,6 +7,12 @@ const yoklamaService = {
     return response.data;
   },
 
+  submitYoklama: async (data) => {
+  const response = await api.post('/yoklama/submit', data);
+  return response.data;
+  },
+
+
   // Kendi yoklamalarımı getir
   async getMyYoklamalar(params = {}) {
     const response = await api.get('/yoklama/me', { params });

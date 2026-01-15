@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { useContext } from 'react'; // 1. useContext Ekle
+import { AuthProvider, AuthContext } from './context/AuthContext'; // 2. AuthContext Ekle
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -10,11 +11,22 @@ import DashboardPage from './pages/DashboardPage';
 import ScanPage from './pages/ScanPage';
 import HistoryPage from './pages/HistoryPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
+import './services/axiosConfig';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
 
-//import './App.css';
+// ✅ AKILLI YÖNLENDİRME BİLEŞENİ
+// Bu bileşen, kullanıcının durumuna göre nereye gideceğine karar verir.
+const RootRedirect = () => {
+  const { user, loading } = useContext(AuthContext);
+
+  // AuthContext kontrolü bitirene kadar bekle (Yoksa direkt login'e atar)
+  if (loading) return <div className="p-4 text-center">Yükleniyor...</div>;
+
+  // Eğer kullanıcı varsa Dashboard'a, yoksa Login'e git
+  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+};
 
 function App() {
   return (
@@ -39,7 +51,7 @@ function App() {
 
             {/* Öğrenci Routes */}
             <Route
-              path="/scan"
+              path="/qr-scan"
               element={
                 <ProtectedRoute allowedRoles={['ogrenci']}>
                   <ScanPage />
@@ -55,10 +67,11 @@ function App() {
               }
             />
 
-            {/* Default Route */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* ✅ DÜZELTİLEN KISIM: Ana Sayfa Yönlendirmesi */}
+            {/* Eskiden direkt login'e atıyordu, şimdi kontrol edip atıyor */}
+            <Route path="/" element={<RootRedirect />} />
             
-            {/* 404 */}
+            {/* 404 - Sayfa bulunamazsa */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
 

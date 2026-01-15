@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import yoklamaService from '../services/yoklamaService';
+import yoklamaService from '../../services/yoklamaService';
 import { toast } from 'react-toastify';
 //import './HistoryPage.css';
 

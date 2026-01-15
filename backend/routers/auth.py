@@ -3,13 +3,15 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 import os
 import bcrypt
+
 
 from database import get_db
 from models import Kullanici
 from schemas import LoginSchema, RegisterSchema, TokenResponse, TokenData, KullaniciResponse
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -19,26 +21,20 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-# Helper fonksiyonlar
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Şifreyi ve hash'i byte formatına çeviriyoruz
-    password_bytes = plain_password.encode('utf-8')
-    hashed_bytes = hashed_password.encode('utf-8')
-    # bcrypt.checkpw doğrudan doğrulamayı yapar
-    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 def get_password_hash(password: str) -> str:
-    # Şifreyi byte'a çeviriyoruz
+    # Şifreyi byte'a çevir
     password_bytes = password.encode('utf-8')
-    # Salt (tuzlama) oluşturuyoruz
+    # Salt oluştur ve hash'le
     salt = bcrypt.gensalt()
-    # Şifreyi hashliyoruz
     hashed = bcrypt.hashpw(password_bytes, salt)
-    # Veritabanına kaydetmek için tekrar string (utf-8) formatına çeviriyoruz
     return hashed.decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    password_bytes = plain_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
+
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()

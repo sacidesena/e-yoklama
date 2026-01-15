@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import QRScanner from '../components/QRScanner';
 import { AuthContext } from '../context/AuthContext';
 import useFingerprint from '../hooks/useFingerprint';
-import yoklamaService from '../services/yoklamaService';
+import yoklamaService from '../../services/yoklamaService';
 import { toast } from 'react-toastify';
 import './ScanPage.css';
 

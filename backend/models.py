@@ -38,7 +38,8 @@ class Sinif(Base):
     
     # İlişkiler
     programlar = relationship("Program", back_populates="sinif")
-    qr_kod = relationship("QRKod", back_populates="sinif", uselist=False)
+    #qr_kod = relationship("QRKod", back_populates="sinif", uselist=False)
+    qr_kod = relationship("QRKod", back_populates="sinif", cascade="all, delete-orphan")
 
 # ===================== DERS =====================
 

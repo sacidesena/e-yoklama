@@ -5,11 +5,16 @@ import uvicorn
 import os
 from dotenv import load_dotenv
 load_dotenv()
+from sqlalchemy.orm import Session
+from database import SessionLocal
+from models import Kullanici
+from routers.auth import get_password_hash
+#from security import get_password_hash
+from passlib.context import CryptContext
 
 #test mail için ekliyorum
 #from routes.test import router as test_router
 #app.include_router(test_router)
-
 
 # Router'ları import et
 from routers import auth, users, siniflar, dersler, yoklama
@@ -44,14 +49,27 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",  # ✅ Bu zaten var, tüm IP'lere izin veriyor
+        port=port,
+        reload=True
+    )
+
+
 # Database tablolarını oluştur
 @app.on_event("startup")
 async def startup_event():
     """Uygulama başlatıldığında database tablolarını oluştur"""
     Base.metadata.create_all(bind=engine)
+    create_initial_admin()
+    print("👤 Varsayılan admin hazır")
     print("✅ Database bağlantısı başarılı!")
     print("✅ Tablolar kontrol edildi/oluşturuldu")
-    print(f"📡 API Docs: http://localhost:8000/docs")
+    print(f"📡 API Docs: https://localhost:8000/docs")
 
 # Global exception handler
 @app.exception_handler(Exception)
@@ -121,6 +139,32 @@ async def api_info():
         ],
         "database": "MySQL"
     }
+
+def create_initial_admin():
+    db: Session = SessionLocal()
+
+    try:
+        admin = db.query(Kullanici).filter(
+            Kullanici.mail == "admin@yoklama.com"
+        ).first()
+
+        if not admin:
+            admin = Kullanici(
+                mail="admin@yoklama.com",
+                ad="Admin",
+                rol="admin",
+                sifre_hash=get_password_hash("Admin123!"),
+                aktif=True
+            )
+            db.add(admin)
+            db.commit()
+            print("✅ İlk admin oluşturuldu: admin@yoklama.com")
+        else:
+            print("ℹ️ Admin zaten mevcut")
+
+    finally:
+        db.close()
+
 
 # Development için
 if __name__ == "__main__":

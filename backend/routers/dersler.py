@@ -157,20 +157,19 @@ async def list_program(
     for prog in programlar:
         ders = db.query(Ders).filter(Ders.id == prog.ders_id).first()
         sinif = db.query(Sinif).filter(Sinif.id == prog.sinif_id).first()
-        ogretmen = db.query(Kullanici).filter(Kullanici.id == prog.ogretmen_id).first()
+        
         
         result.append({
             "id": prog.id,
             "ders_id": prog.ders_id,
             "sinif_id": prog.sinif_id,
-            "ogretmen_id": prog.ogretmen_id,
+            "ogretmen_mail": prog.ogretmen_mail,
             "gun": prog.gun,
             "baslangic": prog.baslangic,
             "bitis": prog.bitis,
             "aktif": prog.aktif,
             "ders_adi": ders.ad if ders else None,
             "sinif_adi": sinif.ad if sinif else None,
-            "ogretmen_adi": ogretmen.ad if ogretmen else None
         })
     
     return result
@@ -193,12 +192,13 @@ async def create_program(
         raise HTTPException(status_code=404, detail="Sınıf bulunamadı")
     
     # Öğretmen var mı?
-    ogretmen = db.query(Kullanici).filter(
-        Kullanici.id == program_data.ogretmen_id,
+    """ogretmen = db.query(Kullanici).filter(
+        Kullanici.id == program_data.ogretmen_mail,
         Kullanici.rol == "ogretmen"
     ).first()
     if not ogretmen:
         raise HTTPException(status_code=404, detail="Öğretmen bulunamadı")
+    """
     
     # Saat parse et
     try:
@@ -270,13 +270,13 @@ async def get_program(
     
     ders = db.query(Ders).filter(Ders.id == program.ders_id).first()
     sinif = db.query(Sinif).filter(Sinif.id == program.sinif_id).first()
-    ogretmen = db.query(Kullanici).filter(Kullanici.id == program.ogretmen_id).first()
+    ogretmen = db.query(Kullanici).filter(Kullanici.id == program.ogretmen_mail).first()
     
     return {
         "id": program.id,
         "ders_id": program.ders_id,
         "sinif_id": program.sinif_id,
-        "ogretmen_id": program.ogretmen_id,
+        "ogretmen_mail": program.ogretmen_mail,
         "gun": program.gun,
         "baslangic": program.baslangic,
         "bitis": program.bitis,
@@ -304,8 +304,8 @@ async def update_program(
         program.ders_id = program_data.ders_id
     if program_data.sinif_id is not None:
         program.sinif_id = program_data.sinif_id
-    if program_data.ogretmen_id is not None:
-        program.ogretmen_id = program_data.ogretmen_id
+    if program_data.ogretmen_mail is not None:
+        program.ogretmen_mail = program_data.ogretmen_mail
     if program_data.gun is not None:
         program.gun = program_data.gun
     if program_data.baslangic is not None:
@@ -320,13 +320,13 @@ async def update_program(
     
     ders = db.query(Ders).filter(Ders.id == program.ders_id).first()
     sinif = db.query(Sinif).filter(Sinif.id == program.sinif_id).first()
-    ogretmen = db.query(Kullanici).filter(Kullanici.id == program.ogretmen_id).first()
+    ogretmen = db.query(Kullanici).filter(Kullanici.id == program.ogretmen_mail).first()
     
     return {
         "id": program.id,
         "ders_id": program.ders_id,
         "sinif_id": program.sinif_id,
-        "ogretmen_id": program.ogretmen_id,
+        "ogretmen_mail": program.ogretmen_mail,
         "gun": program.gun,
         "baslangic": program.baslangic,
         "bitis": program.bitis,

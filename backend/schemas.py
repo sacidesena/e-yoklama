@@ -12,8 +12,8 @@ class RegisterSchema(BaseModel):
     mail: EmailStr
     ad: str
     sifre: str
-    ogrenci_no: Optional[str] = None  # Sadece öğrenciler için
-    rol: str = "ogrenci"  # Default: ogrenci
+    ogrenci_no: Optional[str] = None
+    rol: str = "ogrenci"
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -59,9 +59,15 @@ class SifreGuncelle(BaseModel):
 
 class SinifEkle(BaseModel):
     ad: str
+    aciklama: Optional[str] = None
+    kapasite: Optional[int] = None
+    aktif: Optional[bool] = True
 
 class SinifGuncelle(BaseModel):
     ad: Optional[str] = None
+    aciklama: Optional[str] = None
+    kapasite: Optional[int] = None
+    aktif: Optional[bool] = None
 
 class SinifResponse(BaseModel):
     id: int
@@ -74,13 +80,29 @@ class SinifResponse(BaseModel):
 
 class DersEkle(BaseModel):
     ad: str
+    kod: str
+    hoca_adi: Optional[str] = None
+    hoca_mail: Optional[str] = None
+    aciklama: Optional[str] = None
+    aktif: Optional[bool] = True
 
 class DersGuncelle(BaseModel):
     ad: Optional[str] = None
+    kod: Optional[str] = None
+    hoca_adi: Optional[str] = None
+    hoca_mail: Optional[str] = None
+    aciklama: Optional[str] = None
+    aktif: Optional[bool] = None
 
 class DersResponse(BaseModel):
     id: int
     ad: str
+    kod: Optional[str] = None
+    hoca_adi: Optional[str] = None
+    hoca_mail: Optional[str] = None
+    aciklama: Optional[str] = None
+    aktif: Optional[bool] = None
+    olusturma_tarihi: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -90,16 +112,15 @@ class DersResponse(BaseModel):
 class DersProgrami(BaseModel):
     ders_id: int
     sinif_id: int
-    #ogretmen_id: int
-    ogretmen_mail: Optional[str] = None 
+    ogretmen_mail: Optional[str] = None
     gun: str
-    baslangic: str  # "HH:MM" formatında
-    bitis: str      # "HH:MM" formatında
+    baslangic: str
+    bitis: str
 
 class ProgramGuncelle(BaseModel):
     ders_id: Optional[int] = None
     sinif_id: Optional[int] = None
-    ogretmen_id: Optional[int] = None
+    ogretmen_mail: Optional[str] = None  # ✅ ogretmen_id → ogretmen_mail
     gun: Optional[str] = None
     baslangic: Optional[str] = None
     bitis: Optional[str] = None
@@ -109,14 +130,13 @@ class ProgramResponse(BaseModel):
     id: int
     ders_id: int
     sinif_id: int
-    ogretmen_id: int
+    ogretmen_mail: Optional[str] = None  # ✅ ogretmen_id → ogretmen_mail
     gun: str
     baslangic: time
     bitis: time
     aktif: bool
     ders_adi: Optional[str] = None
     sinif_adi: Optional[str] = None
-    ogretmen_adi: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -128,13 +148,12 @@ class YoklamaEkle(BaseModel):
     ders_id: int
     sinif_id: int
     device_fingerprint: Optional[str] = None
-    konum: Optional[dict] = None  # {"latitude": 0.0, "longitude": 0.0}
+    konum: Optional[dict] = None
 
     class Config:
         from_attributes = True
 
 class YoklamaSubmit(BaseModel):
-    """QR kod tarama ile yoklama"""
     qr_data: str
     sinif_id: int
     device_fingerprint: str
@@ -166,8 +185,7 @@ class QRKodResponse(BaseModel):
     id: int
     sinif_id: int
     qr_data: str
-    dosya_yolu: str
     olusturma_tarihi: datetime
-    
+
     class Config:
         from_attributes = True

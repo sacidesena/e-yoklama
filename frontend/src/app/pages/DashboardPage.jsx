@@ -55,7 +55,10 @@ const DashboardPage = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    toast.info('Çıkış yapıldı.');
+    setTimeout(() => {
+      navigate('/login');
+    },500); 
   };
 
   if (loading) {
@@ -74,7 +77,7 @@ const DashboardPage = () => {
       <div className="dashboard-header">
         <div className="header-content">
           <div>
-            <h1>Yoklama Sistemi</h1>
+            <h1>IBU Yoklama Sistemi</h1>
             <p style={{ fontSize: '14px', marginTop: '5px', opacity: 0.9 }}>
               {user?.ad || 'Öğrenci'}
             </p>
@@ -88,9 +91,9 @@ const DashboardPage = () => {
       <div className="dashboard-main">
         {/* Hoş Geldiniz Kartı - Tek Kart */}
         <div className="welcome-section">
-          <h2>Hoş Geldiniz, {user?.ad || 'Sacide Sena Coşkunyürek'}!</h2>
+          <h2>Hoş Geldiniz, {user?.ad}!</h2>
           <p style={{ color: '#666', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            📧 {user?.mail || 's.coskunyurek@hotmail.com'}
+            📧 {user?.mail}
           </p>
           {user?.ogrenci_no && (
             <p style={{ color: '#666', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>

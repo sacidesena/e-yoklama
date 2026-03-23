@@ -11,7 +11,7 @@ import DashboardPage from './pages/DashboardPage';
 import ScanPage from './pages/ScanPage';
 import HistoryPage from './pages/HistoryPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
-import './services/axiosConfig';
+import '../services/axiosConfig';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';

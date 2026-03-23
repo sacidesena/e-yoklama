@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, ForeignKey,
+    Column, Integer, String, Text, ForeignKey,
     Time, Index, DateTime, Boolean
 )
 from sqlalchemy.orm import relationship
@@ -17,16 +17,14 @@ class Kullanici(Base):
     rol = Column(String(50), nullable=False)  # ogrenci / ogretmen / admin
     sifre_hash = Column(String(255), nullable=False)
     aktif = Column(Boolean, default=True)
-    
-    # YENİ ALANLAR (Güvenlik için)
-    ogrenci_no = Column(String(50), unique=True, nullable=True, index=True)  # Sadece öğrenciler için
+
+    ogrenci_no = Column(String(50), unique=True, nullable=True, index=True)
     device_fingerprint = Column(String(255), nullable=True)
     son_giris = Column(DateTime, nullable=True)
     kayit_tarihi = Column(DateTime, default=datetime.utcnow)
-    
+
     # İlişkiler
     yoklamalar = relationship("Yoklama", back_populates="ogrenci", foreign_keys="[Yoklama.ogrenci_id]")
-    #programlar = relationship("Program", back_populates="ogretmen")
 
 # ===================== SINIF =====================
 
@@ -35,11 +33,10 @@ class Sinif(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     ad = Column(String(255), nullable=False)
-    
+
     # İlişkiler
     programlar = relationship("Program", back_populates="sinif")
-    #qr_kod = relationship("QRKod", back_populates="sinif", uselist=False)
-    qr_kod = relationship("QRKod", back_populates="sinif", cascade="all, delete-orphan")
+    qr_kodlar = relationship("QRKod", back_populates="sinif", cascade="all, delete-orphan")  # ✅ Tek relationship
 
 # ===================== DERS =====================
 
@@ -47,8 +44,14 @@ class Ders(Base):
     __tablename__ = "dersler"
 
     id = Column(Integer, primary_key=True, index=True)
-    ad = Column(String(255), nullable=False, unique=True)
-    
+    ad = Column(String(200), nullable=False)
+    kod = Column(String(50), unique=True, nullable=False)
+    hoca_adi = Column(String(200), nullable=True)
+    hoca_mail = Column(String(200), nullable=True)
+    aciklama = Column(Text, nullable=True)
+    aktif = Column(Boolean, default=True)
+    olusturma_tarihi = Column(DateTime, default=datetime.utcnow)
+
     # İlişkiler
     programlar = relationship("Program", back_populates="ders")
 
@@ -64,17 +67,15 @@ class Program(Base):
     id = Column(Integer, primary_key=True, index=True)
     ders_id = Column(Integer, ForeignKey("dersler.id"), nullable=False)
     sinif_id = Column(Integer, ForeignKey("siniflar.id"), nullable=False)
-    #ogretmen_id = Column(Integer, ForeignKey("kullanicilar.id"), nullable=False)
-    ogretmen_mail = Column(String(255), nullable=True) 
+    ogretmen_mail = Column(String(255), nullable=True)
     gun = Column(String(50), nullable=False)
     baslangic = Column(Time, nullable=False)
     bitis = Column(Time, nullable=False)
-    aktif = Column(Boolean, default=True)  # YENİ: Ders aktif mi?
-    
+    aktif = Column(Boolean, default=True)
+
     # İlişkiler
     ders = relationship("Ders", back_populates="programlar")
     sinif = relationship("Sinif", back_populates="programlar")
-    #ogretmen = relationship("Kullanici", back_populates="programlar")
 
 # ===================== YOKLAMA =====================
 
@@ -90,27 +91,22 @@ class Yoklama(Base):
     ders_id = Column(Integer, ForeignKey("dersler.id"), nullable=False)
     sinif_id = Column(Integer, ForeignKey("siniflar.id"), nullable=False)
     zaman = Column(DateTime, default=datetime.utcnow)
-    
-    # YENİ ALANLAR
     durum = Column(String(20), default="Geldi")
     device_fingerprint = Column(String(255), nullable=True)
     konum = Column(String(100), nullable=True)
-    
+
     # İlişkiler
     ogrenci = relationship("Kullanici", back_populates="yoklamalar", foreign_keys=[ogrenci_id])
+
 # ===================== QR KOD =====================
 
 class QRKod(Base):
     __tablename__ = "qr_kodlar"
 
     id = Column(Integer, primary_key=True, index=True)
-    sinif_id = Column(Integer, ForeignKey("siniflar.id"), unique=True, nullable=False)
-    qr_data = Column(String(255), nullable=False)
-    dosya_yolu = Column(String(500), nullable=False)
+    sinif_id = Column(Integer, ForeignKey("siniflar.id"), nullable=False)
+    qr_data = Column(String(500), unique=True, nullable=False)
     olusturma_tarihi = Column(DateTime, default=datetime.utcnow)
-    guncelleme_tarihi = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
-    
-    # İlişkiler
-    sinif = relationship("Sinif", back_populates="qr_kod")
+
+    # İlişki
+    sinif = relationship("Sinif", back_populates="qr_kodlar")

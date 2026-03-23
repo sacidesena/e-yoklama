@@ -160,7 +160,7 @@ async def get_sinif_program(
             program_dict[prog.gun] = []
         
         ders = db.query(Ders).filter(Ders.id == prog.ders_id).first()
-        ogretmen = db.query(Kullanici).filter(Kullanici.id == prog.ogretmen_id).first()
+        ogretmen = db.query(Kullanici).filter(Kullanici.id == prog.ogretmen_mail).first()
         
         program_dict[prog.gun].append({
             "id": prog.id,

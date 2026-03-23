@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../services/axiosConfig';
 import { toast } from 'react-toastify';
+import sinifService from '../services/sinifService';
+import { API_URL } from '../config';
 
 const SinifYonetim = () => {
   const [siniflar, setSiniflar] = useState([]);
@@ -23,9 +25,10 @@ const SinifYonetim = () => {
   const fetchSiniflar = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const response = await fetch('http://127.0.0.1:8000/siniflar/', {
+      const response = await fetch(`${API_URL}/siniflar/`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true' 
         }
       });
       
@@ -50,9 +53,9 @@ const SinifYonetim = () => {
 
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const url = editMode 
-        ? `http://127.0.0.1:8000/siniflar/${selectedSinif.id}/`
-        : 'http://127.0.0.1:8000/siniflar/';
+      const url = editMode
+        ? `${API_URL}/siniflar/${selectedSinif.id}/`
+        : `${API_URL}/siniflar/`;
       
       const response = await fetch(url, {
         method: editMode ? 'PUT' : 'POST',
@@ -87,10 +90,11 @@ const SinifYonetim = () => {
     
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const response = await fetch(`http://127.0.0.1:8000/siniflar/${id}/`, {
+      const response = await fetch(`${API_URL}/siniflar/${id}/`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true' 
         }
       });
 

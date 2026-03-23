@@ -1,36 +1,30 @@
 import api from './axiosConfig';
 
 const sinifService = {
-  // Tüm sınıfları getir
   getSiniflar: async () => {
     try {
       console.log('📚 Sınıflar getiriliyor...');
       const response = await api.get('/siniflar');
-      console.log('✅ Sınıflar:', response.data);
       return response.data;
     } catch (error) {
-      console.error('❌ Sınıflar getirme hatası:', error);
+      console.error('❌ Sınıflar hatası:', error);
       throw error;
     }
   },
 
-  // Sınıf oluştur
-  createSinif: async (sinifData) => {
+  createSinif: async (data) => {
     try {
-      console.log('📝 Sınıf oluşturuluyor:', sinifData);
-      const response = await api.post('/siniflar', sinifData);
-      console.log('✅ Sınıf oluşturuldu:', response.data);
+      const response = await api.post('/siniflar', data);
       return response.data;
     } catch (error) {
-      console.error('❌ Sınıf oluşturma hatası:', error.response?.data);
+      console.error('❌ Sınıf oluşturma hatası:', error);
       throw error;
     }
   },
 
-  // Sınıf güncelle
-  updateSinif: async (id, sinifData) => {
+  updateSinif: async (id, data) => {
     try {
-      const response = await api.put(`/siniflar/${id}`, sinifData);
+      const response = await api.put(`/siniflar/${id}`, data);
       return response.data;
     } catch (error) {
       console.error('❌ Sınıf güncelleme hatası:', error);
@@ -38,7 +32,6 @@ const sinifService = {
     }
   },
 
-  // Sınıf sil
   deleteSinif: async (id) => {
     try {
       const response = await api.delete(`/siniflar/${id}`);

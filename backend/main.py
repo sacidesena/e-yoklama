@@ -5,73 +5,82 @@ import uvicorn
 import os
 from dotenv import load_dotenv
 load_dotenv()
+
 from sqlalchemy.orm import Session
-from database import SessionLocal
+from database import SessionLocal, engine, Base
 from models import Kullanici
 from routers.auth import get_password_hash
-#from security import get_password_hash
-from passlib.context import CryptContext
-
-#test mail için ekliyorum
-#from routes.test import router as test_router
-#app.include_router(test_router)
 
 # Router'ları import et
 from routers import auth, users, siniflar, dersler, yoklama
 
-# Database
-from database import engine
-from models import Base
-
 # FastAPI app oluştur
 app = FastAPI(
-    title="Yoklama Sistemi API",
+    title="E-Yoklama API",
     description="QR kod tabanlı öğrenci yoklama sistemi",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-# CORS ayarları
-#origins = [
-    #"http://localhost:3000",
-#   "http://localhost:5173",
-    #"http://127.0.0.1:3000",
-#    "http://127.0.0.1:5173",
-    # Production domain buraya]
-
+# ============================================
+# CORS - MUTLAKA ROUTE'LARDAN ÖNCE!
+# ============================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tüm originlere izin (geliştirme için)
-    allow_credentials=True,
+    allow_origins=["*"],  # Geliştirme ortamı için tüm originlere izin ver
+    allow_credentials=False,  # allow_origins=["*"] ile credentials True olamaz
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
 
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",  # ✅ Bu zaten var, tüm IP'lere izin veriyor
-        port=port,
-        reload=True
-    )
+
+# ============================================
+# Router'ları ekle
+# ============================================
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(siniflar.router)
+app.include_router(dersler.router)
+app.include_router(yoklama.router)
 
 
-# Database tablolarını oluştur
+# ============================================
+# Database init & Startup
+# ============================================
 @app.on_event("startup")
 async def startup_event():
-    """Uygulama başlatıldığında database tablolarını oluştur"""
+    """Uygulama başlarken çalışır"""
+    print("✅ Tablolar kontrol ediliyor...")
     Base.metadata.create_all(bind=engine)
-    create_initial_admin()
-    print("👤 Varsayılan admin hazır")
-    print("✅ Database bağlantısı başarılı!")
-    print("✅ Tablolar kontrol edildi/oluşturuldu")
-    print(f"📡 API Docs: https://localhost:8000/docs")
 
+    db = SessionLocal()
+    try:
+        admin = db.query(Kullanici).filter(Kullanici.mail == "admin@yoklama.com").first()
+        if not admin:
+            admin = Kullanici(
+                mail="admin@yoklama.com",
+                ad="Admin",
+                rol="admin",
+                sifre_hash=get_password_hash("Admin123!"),
+                aktif=True
+            )
+            db.add(admin)
+            db.commit()
+            print("✅ İlk admin oluşturuldu: admin@yoklama.com")
+        else:
+            print("ℹ️ Admin zaten mevcut")
+    finally:
+        db.close()
+
+    print("✅ Database bağlantısı başarılı!")
+    print("👤 Varsayılan admin hazır")
+    print("📡 API Docs: http://localhost:8000/docs")
+
+
+# ============================================
 # Global exception handler
+# ============================================
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     print(f"❌ Hata: {exc}")
@@ -80,45 +89,32 @@ async def global_exception_handler(request, exc):
         content={"detail": "Bir hata oluştu. Lütfen daha sonra tekrar deneyin."}
     )
 
-# Router'ları ekle
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(siniflar.router)
-app.include_router(dersler.router)
-app.include_router(yoklama.router)
 
-# Ana endpoint
+# ============================================
+# Endpoints
+# ============================================
 @app.get("/")
 async def root():
     return {
-        "message": "Yoklama Sistemi API",
+        "message": "E-Yoklama API",
         "version": "1.0.0",
         "docs": "/docs",
         "status": "active"
     }
 
-# Health check
+
 @app.get("/health")
 async def health_check():
     try:
-        # Database bağlantısını test et
         from sqlalchemy import text
-        from database import SessionLocal
         db = SessionLocal()
         db.execute(text("SELECT 1"))
         db.close()
-        return {
-            "status": "healthy",
-            "database": "connected"
-        }
+        return {"status": "healthy", "database": "connected"}
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "database": "disconnected",
-            "error": str(e)
-        }
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
 
-# API bilgisi
+
 @app.get("/api/info")
 async def api_info():
     return {
@@ -140,39 +136,7 @@ async def api_info():
         "database": "MySQL"
     }
 
-def create_initial_admin():
-    db: Session = SessionLocal()
 
-    try:
-        admin = db.query(Kullanici).filter(
-            Kullanici.mail == "admin@yoklama.com"
-        ).first()
-
-        if not admin:
-            admin = Kullanici(
-                mail="admin@yoklama.com",
-                ad="Admin",
-                rol="admin",
-                sifre_hash=get_password_hash("Admin123!"),
-                aktif=True
-            )
-            db.add(admin)
-            db.commit()
-            print("✅ İlk admin oluşturuldu: admin@yoklama.com")
-        else:
-            print("ℹ️ Admin zaten mevcut")
-
-    finally:
-        db.close()
-
-
-# Development için
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=port,
-        reload=True
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

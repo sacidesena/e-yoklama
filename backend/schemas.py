@@ -72,10 +72,12 @@ class SinifGuncelle(BaseModel):
 class SinifResponse(BaseModel):
     id: int
     ad: str
+    aciklama: Optional[str] = None
+    kapasite: Optional[int] = None
+    aktif: Optional[bool] = None
 
     class Config:
         from_attributes = True
-
 # ===================== DERS SCHEMAS =====================
 
 class DersEkle(BaseModel):

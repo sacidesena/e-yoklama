@@ -61,7 +61,8 @@ const SinifYonetim = () => {
         method: editMode ? 'PUT' : 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify({
           ad: formData.ad,
@@ -235,10 +236,6 @@ const SinifYonetim = () => {
                   <div style={{ color: '#6b7280', marginBottom: '8px' }}>
                     <span style={{ marginRight: '8px' }}>👥</span>
                     Kapasite: {sinif.kapasite}
-                  </div>
-                  <div style={{ color: '#6b7280' }}>
-                    <span style={{ marginRight: '8px' }}>📅</span>
-                    {new Date(sinif.olusturulma_tarihi).toLocaleDateString('tr-TR')}
                   </div>
                 </div>
 

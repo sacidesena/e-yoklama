@@ -5,6 +5,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
+from sqlalchemy import Date
 
 # ===================== KULLANICI =====================
 
@@ -33,10 +34,13 @@ class Sinif(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     ad = Column(String(255), nullable=False)
+    aciklama = Column(Text, nullable=True)
+    kapasite = Column(Integer, nullable=True)
+    aktif = Column(Boolean, default=True)
 
     # İlişkiler
     programlar = relationship("Program", back_populates="sinif")
-    qr_kodlar = relationship("QRKod", back_populates="sinif", cascade="all, delete-orphan")  # ✅ Tek relationship
+    qr_kodlar = relationship("QRKod", back_populates="sinif", cascade="all, delete-orphan")
 
 # ===================== DERS =====================
 
@@ -94,6 +98,7 @@ class Yoklama(Base):
     durum = Column(String(20), default="Geldi")
     device_fingerprint = Column(String(255), nullable=True)
     konum = Column(String(100), nullable=True)
+    ip_adresi = Column(String(50), nullable=True)
 
     # İlişkiler
     ogrenci = relationship("Kullanici", back_populates="yoklamalar", foreign_keys=[ogrenci_id])
@@ -110,3 +115,12 @@ class QRKod(Base):
 
     # İlişki
     sinif = relationship("Sinif", back_populates="qr_kodlar")
+
+#mail
+class MailLog(Base):
+    __tablename__ = "mail_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    program_id = Column(Integer, ForeignKey("program.id"), nullable=False)
+    gonderim_tarihi = Column(Date, nullable=False)
+    gonderildi_zaman = Column(DateTime, default=datetime.utcnow)

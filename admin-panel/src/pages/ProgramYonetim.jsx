@@ -20,7 +20,7 @@ const Program = () => {
     aktif: true
   });
 
-  const gunler = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+  const gunler = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma','Cumartesi'];
 
   const getHeaders = () => {
     const token = localStorage.getItem('access_token');

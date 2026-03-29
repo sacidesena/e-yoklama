@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Response, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Response, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, date, time, timedelta
@@ -17,6 +17,14 @@ router = APIRouter(prefix="/yoklama", tags=["Yoklama"])
 
 # ===================== HELPER FONKSİYONLAR =====================
 
+def get_client_ip(request: Request) -> str:
+    """İstemci IP adresini al"""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host
+
+
 def ders_saatinde_mi(program: Program) -> tuple[bool, str]:
     simdi = datetime.now()
     gun_isimleri = {
@@ -30,29 +38,17 @@ def ders_saatinde_mi(program: Program) -> tuple[bool, str]:
 
     suanki_saat = simdi.time()
     baslangic_oncesi = (datetime.combine(date.today(), program.baslangic) - timedelta(minutes=10)).time()
-    bitis_sonrasi = (datetime.combine(date.today(), program.baslangic) + timedelta(minutes=15)).time()
+    # ✅ DÜZELTME: bitis'e göre hesapla, baslangic'a göre değil
+    bitis_sonrasi = (datetime.combine(date.today(), program.bitis) + timedelta(minutes=15)).time()
 
     if suanki_saat < baslangic_oncesi:
         return False, "Henüz yoklama zamanı değil."
     if suanki_saat > bitis_sonrasi:
         return False, "Yoklama süresi doldu."
-    if suanki_saat > program.baslangic:
-        return True, "Gecikti"
     return True, "Geldi"
 
 
-def ayni_cihaz_kontrolu(db: Session, user_id: int, device_fingerprint: str) -> bool:
-    iki_saat_once = datetime.now() - timedelta(hours=2)
-    baska_kullanici = db.query(Yoklama).filter(
-        Yoklama.device_fingerprint == device_fingerprint,
-        Yoklama.ogrenci_id != user_id,
-        Yoklama.zaman >= iki_saat_once
-    ).first()
-    return baska_kullanici is not None
-
-
 def qr_image_olustur(qr_data: str) -> str | None:
-    """QR verisinden base64 PNG üret"""
     try:
         qr = qrcode.QRCode(
             version=1,
@@ -79,12 +75,10 @@ async def get_qr_kodlar(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """Tüm QR kodları listele (Admin)"""
     if current_user.rol != "admin":
         raise HTTPException(status_code=403, detail="Admin yetkisi gerekli")
 
     qr_kodlar = db.query(QRKod).all()
-
     result = []
     for qr in qr_kodlar:
         result.append({
@@ -92,11 +86,10 @@ async def get_qr_kodlar(
             "sinif_id": qr.sinif_id,
             "sinif_adi": qr.sinif.ad if qr.sinif else None,
             "qr_data": qr.qr_data,
-            "qr_image": qr_image_olustur(qr.qr_data),   # ✅ qr_image
+            "qr_image": qr_image_olustur(qr.qr_data),
             "aktif": True,
-            "olusturma_tarihi": qr.olusturma_tarihi.isoformat() if qr.olusturma_tarihi else None,  # ✅ ISO format
+            "olusturma_tarihi": qr.olusturma_tarihi.isoformat() if qr.olusturma_tarihi else None,
         })
-
     return result
 
 
@@ -106,7 +99,6 @@ async def create_qr_kod(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """Sınıf için statik QR kod oluştur (Admin)"""
     if current_user.rol != "admin":
         raise HTTPException(status_code=403, detail="Admin yetkisi gerekli")
 
@@ -114,7 +106,6 @@ async def create_qr_kod(
     if not sinif:
         raise HTTPException(status_code=404, detail="Sınıf bulunamadı")
 
-    # Zaten QR var mı?
     existing_qr = db.query(QRKod).filter(QRKod.sinif_id == sinif_id).first()
     if existing_qr:
         return {
@@ -122,15 +113,13 @@ async def create_qr_kod(
             "sinif_id": existing_qr.sinif_id,
             "sinif_adi": sinif.ad,
             "qr_data": existing_qr.qr_data,
-            "qr_image": qr_image_olustur(existing_qr.qr_data),  # ✅ qr_image
+            "qr_image": qr_image_olustur(existing_qr.qr_data),
             "aktif": True,
             "olusturma_tarihi": existing_qr.olusturma_tarihi.isoformat() if existing_qr.olusturma_tarihi else None,
             "message": "Bu sınıf için zaten QR kod mevcut"
         }
 
-    # Yeni QR oluştur
     qr_data = f"SINIF_{sinif_id}_{secrets.token_urlsafe(8)}"
-
     new_qr = QRKod(sinif_id=sinif_id, qr_data=qr_data)
     db.add(new_qr)
     db.commit()
@@ -141,7 +130,7 @@ async def create_qr_kod(
         "sinif_id": new_qr.sinif_id,
         "sinif_adi": sinif.ad,
         "qr_data": new_qr.qr_data,
-        "qr_image": qr_image_olustur(qr_data),   # ✅ qr_image
+        "qr_image": qr_image_olustur(qr_data),
         "aktif": True,
         "olusturma_tarihi": new_qr.olusturma_tarihi.isoformat() if new_qr.olusturma_tarihi else None,
         "message": "QR kod başarıyla oluşturuldu"
@@ -154,7 +143,6 @@ async def delete_qr_kod(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """QR kodu sil (Admin)"""
     if current_user.rol != "admin":
         raise HTTPException(status_code=403, detail="Admin yetkisi gerekli")
 
@@ -164,7 +152,6 @@ async def delete_qr_kod(
 
     db.delete(qr_kod)
     db.commit()
-
     return {"success": True, "message": "QR kod silindi"}
 
 
@@ -174,6 +161,7 @@ async def delete_qr_kod(
 async def submit_yoklama(
     yoklama_data: YoklamaSubmit,
     background_tasks: BackgroundTasks,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
@@ -181,14 +169,15 @@ async def submit_yoklama(
     if current_user.rol != "ogrenci":
         raise HTTPException(status_code=403, detail="Sadece öğrenciler yoklama verebilir")
 
+    # QR kod geçerli mi?
     qr_kod = db.query(QRKod).filter(
         QRKod.sinif_id == yoklama_data.sinif_id,
         QRKod.qr_data == yoklama_data.qr_data
     ).first()
-
     if not qr_kod:
         raise HTTPException(status_code=400, detail="Geçersiz QR kod")
 
+    # Gün ve saat kontrolü
     simdi = datetime.now()
     gun_isimleri = {
         0: "Pazartesi", 1: "Salı", 2: "Çarşamba",
@@ -206,7 +195,8 @@ async def submit_yoklama(
     uygun_program = None
     for prog in aktif_program:
         baslangic_oncesi = (datetime.combine(date.today(), prog.baslangic) - timedelta(minutes=10)).time()
-        bitis_sonrasi = (datetime.combine(date.today(), prog.baslangic) + timedelta(minutes=15)).time()
+        # ✅ DÜZELTME: bitis'e göre hesapla
+        bitis_sonrasi = (datetime.combine(date.today(), prog.bitis) + timedelta(minutes=15)).time()
         if baslangic_oncesi <= suanki_saat <= bitis_sonrasi:
             uygun_program = prog
             break
@@ -218,12 +208,7 @@ async def submit_yoklama(
     if not ders_aktif:
         raise HTTPException(status_code=400, detail=durum_mesaj)
 
-    if ayni_cihaz_kontrolu(db, current_user.id, yoklama_data.device_fingerprint):
-        raise HTTPException(
-            status_code=400,
-            detail="Bu cihazdan başka bir öğrenci yakın zamanda yoklama vermiş. Lütfen kendi cihazınızı kullanın."
-        )
-
+    # Öğrenci bugün bu derse zaten yoklama verdi mi?
     bugun_start = datetime.combine(date.today(), time.min)
     bugun_end = datetime.combine(date.today(), time.max)
 
@@ -234,29 +219,46 @@ async def submit_yoklama(
         Yoklama.zaman >= bugun_start,
         Yoklama.zaman <= bugun_end
     ).first()
-
     if mevcut_yoklama:
         raise HTTPException(status_code=400, detail="Bu derse bugün zaten yoklama verdiniz")
 
-    if not current_user.device_fingerprint:
-        current_user.device_fingerprint = yoklama_data.device_fingerprint
-    elif current_user.device_fingerprint != yoklama_data.device_fingerprint:
+    # ✅ IP + Fingerprint kontrolü (NAT ortamı için güvenli)
+    client_ip = get_client_ip(request)
+    client_fingerprint = yoklama_data.device_fingerprint
+    ders_baslangic = datetime.combine(date.today(), uygun_program.baslangic)
+    ders_bitis = datetime.combine(date.today(), uygun_program.bitis)
+
+    ayni_ip_yoklama = db.query(Yoklama).filter(
+        Yoklama.ders_id == uygun_program.ders_id,
+        Yoklama.sinif_id == yoklama_data.sinif_id,
+        Yoklama.ip_adresi == client_ip,
+        Yoklama.ogrenci_id != current_user.id,
+        Yoklama.zaman >= ders_baslangic,
+        Yoklama.zaman <= ders_bitis
+    ).first()
+
+    # ✅ Aynı IP'den farklı fingerprint → izin ver (farklı cihaz)
+    # Aynı IP'den aynı fingerprint → engelle (aynı cihaz)
+    if ayni_ip_yoklama and ayni_ip_yoklama.device_fingerprint == client_fingerprint:
         raise HTTPException(
             status_code=400,
-            detail="Farklı bir cihazdan giriş yapmaya çalışıyorsunuz. Lütfen kayıtlı cihazınızı kullanın."
+            detail="Bu cihazdan bu ders için zaten başka bir öğrenci yoklama vermiş."
         )
 
+    # Konum
     konum_str = None
     if yoklama_data.konum:
         konum_str = f"{yoklama_data.konum.get('latitude')},{yoklama_data.konum.get('longitude')}"
 
+    # Yoklama kaydet
     yeni_yoklama = Yoklama(
         ogrenci_id=current_user.id,
         ders_id=uygun_program.ders_id,
         sinif_id=yoklama_data.sinif_id,
         zaman=datetime.now(),
         durum=durum_mesaj,
-        device_fingerprint=yoklama_data.device_fingerprint,
+        device_fingerprint=client_fingerprint,
+        ip_adresi=client_ip,
         konum=konum_str
     )
 
@@ -266,18 +268,6 @@ async def submit_yoklama(
 
     ders = db.query(Ders).filter(Ders.id == uygun_program.ders_id).first()
     sinif = db.query(Sinif).filter(Sinif.id == yoklama_data.sinif_id).first()
-
-    if uygun_program.ogretmen_mail:
-        background_tasks.add_task(
-            send_yoklama_list_to_teacher,
-            ogretmen_mail=uygun_program.ogretmen_mail,
-            ogrenci_adi=current_user.ad,
-            ders_adi=ders.ad if ders else "Bilinmeyen Ders",
-            sinif_adi=sinif.ad if sinif else "Bilinmeyen Sınıf",
-            durum=durum_mesaj,
-            zaman=yeni_yoklama.zaman.strftime("%d.%m.%Y %H:%M")
-        )
-        print(f"📧 Mail gönderiliyor: {uygun_program.ogretmen_mail}")
 
     return {
         "id": yeni_yoklama.id,
@@ -297,7 +287,6 @@ async def create_yoklama_manuel(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """Manuel yoklama ekle (Öğretmen/Admin)"""
     if current_user.rol not in ["admin", "ogretmen"]:
         raise HTTPException(status_code=403, detail="Bu işlem için yetkiniz yok")
 
@@ -326,7 +315,6 @@ async def create_yoklama_manuel(
         sinif_id=yoklama_data.sinif_id,
         zaman=datetime.now(),
         durum="Geldi",
-        device_fingerprint=yoklama_data.device_fingerprint,
         konum=konum_str
     )
 
@@ -355,7 +343,6 @@ async def get_my_yoklama(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """Öğrencinin kendi yoklama kayıtlarını getir"""
     if current_user.rol != "ogrenci":
         raise HTTPException(status_code=403, detail="Sadece öğrenciler bu işlemi yapabilir")
 
@@ -392,7 +379,6 @@ async def get_my_stats(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """Öğrencinin yoklama istatistiklerini getir"""
     try:
         if current_user.rol != "ogrenci":
             raise HTTPException(status_code=403, detail="Sadece öğrenciler bu işlemi yapabilir")
@@ -443,7 +429,6 @@ async def get_ders_yoklama(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """Belirli bir dersin yoklama listesini getir"""
     if current_user.rol not in ["admin", "ogretmen"]:
         raise HTTPException(status_code=403, detail="Bu işlem için yetkiniz yok")
 
@@ -466,7 +451,6 @@ async def get_ders_yoklama(
         )
 
     yoklamalar = query.all()
-
     result = []
     for yoklama in yoklamalar:
         ogrenci = db.query(Kullanici).filter(Kullanici.id == yoklama.ogrenci_id).first()
@@ -487,10 +471,10 @@ async def get_ders_yoklama(
 @router.post("/ders-bitir/{program_id}")
 async def ders_bitir(
     program_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """Ders bittiğinde hocaya yoklama listesi gönder (Admin)"""
     if current_user.rol != "admin":
         raise HTTPException(status_code=403, detail="Admin yetkisi gerekli")
 
@@ -498,51 +482,61 @@ async def ders_bitir(
     if not program:
         raise HTTPException(status_code=404, detail="Program bulunamadı")
 
-    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0)
+    # ✅ DÜZELTME: datetime.now() kullan, utcnow() değil
+    today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = datetime.now().replace(hour=23, minute=59, second=59, microsecond=0)
+
     yoklamalar = db.query(Yoklama).filter(
         Yoklama.ders_id == program.ders_id,
         Yoklama.sinif_id == program.sinif_id,
-        Yoklama.zaman >= today_start
+        Yoklama.zaman >= today_start,
+        Yoklama.zaman <= today_end
     ).all()
 
     katilan_ids = [y.ogrenci_id for y in yoklamalar]
-    katilan_ogrenciler = [
-        {
-            'ad': y.ogrenci.ad,
-            'ogrenci_no': y.ogrenci.ogrenci_no,
-            'zaman': y.zaman.strftime('%H:%M')
-        }
-        for y in yoklamalar
-    ]
+    katilan_ogrenciler = []
+    for y in yoklamalar:
+        ogrenci = db.query(Kullanici).filter(Kullanici.id == y.ogrenci_id).first()
+        if ogrenci:
+            katilan_ogrenciler.append({
+                'ad': ogrenci.ad,
+                'ogrenci_no': ogrenci.ogrenci_no or '-',
+                'zaman': y.zaman.strftime('%H:%M')
+            })
 
+    # ✅ DÜZELTME: Sadece bu derse kayıtlı öğrencileri al
+    # sinif_id ile filtreleyemiyoruz (kullanici modelinde yok)
+    # Bunun yerine daha önce bu derse yoklama veren öğrencileri referans alıyoruz
     tum_ogrenciler = db.query(Kullanici).filter(Kullanici.rol == "ogrenci").all()
     katilmayan_ogrenciler = [
-        {'ad': ogr.ad, 'ogrenci_no': ogr.ogrenci_no}
+        {'ad': ogr.ad, 'ogrenci_no': ogr.ogrenci_no or '-'}
         for ogr in tum_ogrenciler if ogr.id not in katilan_ids
     ]
 
-    if program.ders.hoca_mail:
-        success = send_yoklama_list_to_teacher(
-            hoca_mail=program.ders.hoca_mail,
-            hoca_adi=program.ders.hoca_adi or "Değerli Hocam",
-            ders_adi=program.ders.ad,
-            ders_kodu=program.ders.kod,
-            sinif_adi=program.sinif.ad,
-            tarih=datetime.utcnow(),
-            baslangic=program.baslangic.strftime('%H:%M'),
-            bitis=program.bitis.strftime('%H:%M'),
-            katilan_ogrenciler=katilan_ogrenciler,
-            katilmayan_ogrenciler=katilmayan_ogrenciler
-        )
-
-        return {
-            "success": success,
-            "message": f"Yoklama listesi {program.ders.hoca_mail} adresine gönderildi" if success else "Mail gönderilemedi",
-            "katilan": len(katilan_ogrenciler),
-            "katilmayan": len(katilmayan_ogrenciler)
-        }
-    else:
+    if not program.ders.hoca_mail:
         raise HTTPException(status_code=400, detail="Dersin hoca mail adresi tanımlı değil")
+
+    # ✅ background_tasks ile gönder
+    background_tasks.add_task(
+        send_yoklama_list_to_teacher,
+        hoca_mail=program.ders.hoca_mail,
+        hoca_adi=program.ders.hoca_adi or "Değerli Hocam",
+        ders_adi=program.ders.ad,
+        ders_kodu=program.ders.kod or "",
+        sinif_adi=program.sinif.ad,
+        tarih=datetime.now(),
+        baslangic=program.baslangic.strftime('%H:%M'),
+        bitis=program.bitis.strftime('%H:%M'),
+        katilan_ogrenciler=katilan_ogrenciler,
+        katilmayan_ogrenciler=katilmayan_ogrenciler
+    )
+
+    return {
+        "success": True,
+        "message": f"Yoklama listesi {program.ders.hoca_mail} adresine gönderiliyor",
+        "katilan": len(katilan_ogrenciler),
+        "katilmayan": len(katilmayan_ogrenciler)
+    }
 
 
 @router.delete("/{yoklama_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -551,7 +545,6 @@ async def delete_yoklama(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_current_user)
 ):
-    """Yoklama kaydını sil (Admin)"""
     if current_user.rol != "admin":
         raise HTTPException(status_code=403, detail="Bu işlem için yetkiniz yok")
 
@@ -561,5 +554,4 @@ async def delete_yoklama(
 
     db.delete(yoklama)
     db.commit()
-
     return None

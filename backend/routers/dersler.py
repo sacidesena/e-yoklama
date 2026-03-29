@@ -65,7 +65,14 @@ async def create_ders(
             detail=f"'{ders_data.ad}' isimli ders zaten mevcut"
         )
     
-    new_ders = Ders(ad=ders_data.ad)
+    new_ders = Ders(
+    ad=ders_data.ad,
+    kod=ders_data.kod,
+    hoca_adi=ders_data.hoca_adi,
+    hoca_mail=ders_data.hoca_mail,
+    aciklama=ders_data.aciklama,
+    aktif=ders_data.aktif if ders_data.aktif is not None else True
+)
     
     db.add(new_ders)
     db.commit()
@@ -80,27 +87,33 @@ async def update_ders(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_admin_or_teacher)
 ):
-    """Ders bilgilerini güncelle"""
     ders = db.query(Ders).filter(Ders.id == ders_id).first()
-    
     if not ders:
         raise HTTPException(status_code=404, detail="Ders bulunamadı")
-    
-    if ders_data.ad and ders_data.ad != ders.ad:
+
+    if ders_data.ad is not None:
         existing = db.query(Ders).filter(
             Ders.ad == ders_data.ad,
             Ders.id != ders_id
         ).first()
         if existing:
-            raise HTTPException(
-                status_code=400,
-                detail=f"'{ders_data.ad}' isimli ders zaten mevcut"
-            )
+            raise HTTPException(status_code=400, detail=f"'{ders_data.ad}' isimli ders zaten mevcut")
         ders.ad = ders_data.ad
-    
+
+    # ✅ DİĞER ALANLARI DA GÜNCELLE
+    if ders_data.kod is not None:
+        ders.kod = ders_data.kod
+    if ders_data.hoca_adi is not None:
+        ders.hoca_adi = ders_data.hoca_adi
+    if ders_data.hoca_mail is not None:
+        ders.hoca_mail = ders_data.hoca_mail
+    if ders_data.aciklama is not None:
+        ders.aciklama = ders_data.aciklama
+    if ders_data.aktif is not None:
+        ders.aktif = ders_data.aktif
+
     db.commit()
     db.refresh(ders)
-    
     return ders
 
 @router.delete("/{ders_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -199,7 +212,7 @@ async def create_program(
     if not ogretmen:
         raise HTTPException(status_code=404, detail="Öğretmen bulunamadı")
     """
-    
+
     # Saat parse et
     try:
         baslangic = dt_time.fromisoformat(program_data.baslangic)
@@ -253,7 +266,7 @@ async def create_program(
         "aktif": new_program.aktif,
         "ders_adi": ders.ad,
         "sinif_adi": sinif.ad,
-        "ogretmen_adi": ogretmen.ad
+        "ogretmen_adi": None
     }
 
 @router.get("/program/{program_id}", response_model=ProgramResponse)

@@ -8,6 +8,7 @@ const QRScanner = ({ onScan, onError }) => {
   const [cameraId, setCameraId] = useState(null);
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
+  const isScannedRef = useRef(false);
 
   useEffect(() => {
     // Kamera listesini al
@@ -45,6 +46,8 @@ const QRScanner = ({ onScan, onError }) => {
       return;
     }
 
+    isScannedRef.current = false;
+
     try {
       const html5QrCode = new Html5Qrcode('qr-reader');
       html5QrCodeRef.current = html5QrCode;
@@ -56,10 +59,14 @@ const QRScanner = ({ onScan, onError }) => {
           qrbox: { width: 250, height: 250 },
         },
         (decodedText) => {
-          // QR kod okundu
+          // QR kod okundu sadece bir kez açlışsın
+          if (isScannedRef.current) return;
+          isScannedRef.current = true;
           console.log('QR kod okundu:', decodedText);
+          html5QrCode.stop().catch(() => {});
+          setScanning(false);
           onScan(decodedText);
-          stopScanning();
+          
         },
         (errorMessage) => {
           // Tarama hatası (her frame'de gelir, önemseme)
@@ -76,14 +83,14 @@ const QRScanner = ({ onScan, onError }) => {
   };
 
   const stopScanning = async () => {
-    if (html5QrCodeRef.current && scanning) {
-      try {
+    try {
+      if (html5QrCodeRef.current) {
         await html5QrCodeRef.current.stop();
         html5QrCodeRef.current.clear();
-        setScanning(false);
-      } catch (err) {
-        console.error('QR tarama durdurma hatası:', err);
       }
+      setScanning(false);
+    } catch (err) {
+      console.error('QR tarama durdurma hatası:', err);
     }
   };
 

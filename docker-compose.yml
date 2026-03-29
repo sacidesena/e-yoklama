@@ -20,6 +20,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    restart: on-failure
+          
 
   frontend:
     build: ./frontend
@@ -29,5 +31,19 @@ services:
     depends_on:
       - backend
 
+  admin-panel:
+    build: ./admin-panel
+    container_name: eyoklama-admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+
 volumes:
   db_data:
+
+volumes:
+  - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:

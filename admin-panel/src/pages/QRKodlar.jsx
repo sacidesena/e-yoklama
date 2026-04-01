@@ -76,28 +76,185 @@ const QRKodlar = () => {
     }
   };
 
-  const printQR = (qr) => {
+ const printQR = (qr) => {
+    const sinifAdi = qr.sinif_adi || getSinifAdi(qr.sinif_id);
+    const url = import.meta.env.VITE_BASE_URL || `http://${window.location.hostname}:5173`;
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
         <head>
-          <title>QR Kod - ${qr.sinif_adi || getSinifAdi(qr.sinif_id)}</title>
+          <title>QR Kod - ${sinifAdi}</title>
           <style>
-            body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-            .qr-container { text-align: center; border: 2px solid #667eea; padding: 30px; border-radius: 10px; }
-            h1 { color: #667eea; margin-bottom: 10px; }
-            img { max-width: 400px; margin: 20px 0; }
-            .info { color: #666; margin: 10px 0; }
-            @media print { body { padding: 0; } }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: 'Arial', sans-serif;
+              background: white;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+            }
+            .page {
+              width: 210mm;
+              min-height: 297mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: space-between;
+              padding: 48px 40px;
+              background: white;
+            }
+            .top {
+              text-align: center;
+              width: 100%;
+              border-bottom: 3px solid #1a3a6e;
+              padding-bottom: 24px;
+              margin-bottom: 32px;
+            }
+            .uni-name {
+              font-size: 13px;
+              color: #6b7280;
+              letter-spacing: 3px;
+              text-transform: uppercase;
+              margin-bottom: 8px;
+            }
+            .system-name {
+              font-size: 28px;
+              font-weight: 800;
+              color: #1a3a6e;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+            }
+            .middle {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 24px;
+              width: 100%;
+            }
+            .sinif-adi {
+              font-size: 36px;
+              font-weight: 800;
+              color: #1a3a6e;
+              letter-spacing: 4px;
+              text-transform: uppercase;
+            }
+            .scan-text {
+              font-size: 14px;
+              color: #6b7280;
+              letter-spacing: 2px;
+              text-transform: uppercase;
+            }
+            .qr-wrapper {
+              padding: 24px;
+              border: 2px solid #e5e7eb;
+              border-radius: 4px;
+            }
+            .qr-wrapper img {
+              width: 380px;
+              height: 380px;
+              display: block;
+            }
+            .url {
+              font-size: 15px;
+              font-weight: 600;
+              color: #374151;
+              letter-spacing: 1px;
+              padding: 10px 24px;
+              border: 1px solid #e5e7eb;
+              border-radius: 4px;
+              background: #f9fafb;
+            }
+            .steps {
+              display: flex;
+              gap: 32px;
+              justify-content: center;
+            }
+            .step {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 8px;
+            }
+            .step-num {
+              width: 28px;
+              height: 28px;
+              background: #1a3a6e;
+              color: white;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 13px;
+              font-weight: 700;
+            }
+            .step-text {
+              font-size: 12px;
+              color: #6b7280;
+              text-align: center;
+              letter-spacing: 0.5px;
+            }
+            .bottom {
+              width: 100%;
+              border-top: 1px solid #e5e7eb;
+              padding-top: 16px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            .bottom-left {
+              font-size: 11px;
+              color: #9ca3af;
+              letter-spacing: 1px;
+            }
+            .bottom-right {
+              font-size: 11px;
+              color: #9ca3af;
+            }
+            @media print {
+              body { background: white; }
+              .page { box-shadow: none; }
+            }
           </style>
         </head>
         <body>
-          <div class="qr-container">
-            <h1>🏫 ${qr.sinif_adi || getSinifAdi(qr.sinif_id)}</h1>
-            <img src="${qr.qr_image}" alt="QR Kod" />
-            <div class="info">
-              <p><strong>Oluşturulma:</strong> ${qr.olusturma_tarihi ? new Date(qr.olusturma_tarihi).toLocaleString('tr-TR') : '-'}</p>
-              <p><strong>Durum:</strong> ${qr.aktif ? '✅ Aktif' : '❌ Pasif'}</p>
+          <div class="page">
+            <div class="top">
+              <div class="uni-name">Bolu Abant İzzet Baysal Üniversitesi</div>
+              <div class="system-name">E-Yoklama Sistemi</div>
+            </div>
+
+            <div class="middle">
+              <div class="sinif-adi">${sinifAdi}</div>
+              <div class="scan-text">Yoklama vermek için QR kodu okutun</div>
+
+              <div class="qr-wrapper">
+                <img src="${qr.qr_image}" alt="QR Kod" />
+              </div>
+
+              <div class="url">🌐 ${url}</div>
+
+              <div class="steps">
+                <div class="step">
+                  <div class="step-num">1</div>
+                  <div class="step-text">WiFi'ya<br/>bağlan</div>
+                </div>
+                <div class="step">
+                  <div class="step-num">2</div>
+                  <div class="step-text">Sisteme<br/>giriş yap</div>
+                </div>
+                <div class="step">
+                  <div class="step-num">3</div>
+                  <div class="step-text">QR kodu<br/>okut</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bottom">
+              <div class="bottom-left">BAİBÜ — E-Yoklama Sistemi</div>
+              <div class="bottom-right">${qr.olusturma_tarihi ? new Date(qr.olusturma_tarihi).toLocaleDateString('tr-TR') : '-'}</div>
             </div>
           </div>
           <script>window.onload = () => setTimeout(() => window.print(), 500);</script>
@@ -105,7 +262,7 @@ const QRKodlar = () => {
       </html>
     `);
     printWindow.document.close();
-  };
+};
 
   const downloadQR = (qr) => {
     if (!qr.qr_image) {

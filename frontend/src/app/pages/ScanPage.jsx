@@ -14,7 +14,6 @@ const ScanPage = () => {
   const { fingerprint, loading: fpLoading } = useFingerprint();
   const navigate = useNavigate();
 
-  // Konum al
   const getLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -26,7 +25,6 @@ const ScanPage = () => {
         },
         (error) => {
           console.warn('Konum alınamadı:', error);
-          // Konum zorunlu değil, devam et
         }
       );
     }
@@ -41,21 +39,36 @@ const ScanPage = () => {
     setLoading(true);
 
     try {
-      // QR data parse et (Format: SINIF:id:ad)
-      const [type, sinifId, sinifAd] = qrData.split(':');
+      let sinifId;
 
-      if (type !== 'SINIF') {
+      if (qrData.includes('_')) {
+        // Format: SINIF_1_xxxxx
+        const parts = qrData.split('_');
+        if (parts[0] !== 'SINIF' || parts.length < 2) {
+          toast.error('Geçersiz QR kod!');
+          setLoading(false);
+          return;
+        }
+        sinifId = parts[1];
+      } else if (qrData.includes(':')) {
+        // Format: SINIF:1
+        const parts = qrData.split(':');
+        if (parts[0] !== 'SINIF') {
+          toast.error('Geçersiz QR kod!');
+          setLoading(false);
+          return;
+        }
+        sinifId = parts[1];
+      } else {
         toast.error('Geçersiz QR kod!');
         setLoading(false);
         return;
       }
 
-      // Konum al (opsiyonel)
       if (!konum) {
         getLocation();
       }
 
-      // Yoklama gönder
       const response = await yoklamaService.submitYoklama({
         qr_data: qrData,
         sinif_id: parseInt(sinifId),
@@ -63,14 +76,12 @@ const ScanPage = () => {
         konum: konum,
       });
 
-      toast.success(
-        `✅ Yoklama başarılı! Durum: ${response.durum}`
-      );
+      toast.success(`✅ Yoklama başarılı! Durum: ${response.durum}`);
 
-      // 2 saniye sonra dashboard'a yönlendir
       setTimeout(() => {
         navigate('/dashboard');
       }, 2000);
+
     } catch (error) {
       console.error('Yoklama hatası:', error);
       const errorMsg = error.response?.data?.detail || 'Yoklama verilemedi!';

@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import dersService from '../services/dersServices';
+import api from '../services/axiosConfig';
+import { API_URL } from '../config';
 
 const DersYonetimi = () => {
   const [dersler, setDersler] = useState([]);
@@ -10,6 +13,8 @@ const DersYonetimi = () => {
   const [formData, setFormData] = useState({
     ad: '',
     kod: '',
+    hoca_adi: '',
+    hoca_mail: '',
     aciklama: '',
     aktif: true
   });
@@ -19,76 +24,77 @@ const DersYonetimi = () => {
   }, []);
 
   const fetchDersler = async () => {
-  try {
-    const token = localStorage.getItem('access_token'); // 'admin_token' yerine 'access_token'
-    const response = await fetch('http://127.0.0.1:8000/dersler/', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      setDersler(data);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_URL}/dersler/`, {
+        headers: { 'Authorization': `Bearer ${token}`,
+      'ngrok-skip-browser-warning': 'true'  }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDersler(data);
+      }
+    } catch (error) {
+      console.error('Dersler yüklenirken hata:', error);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Dersler yüklenirken hata:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
-const handleSubmit = async () => {
-  if (!formData.ad || !formData.kod) {
-    alert('Ders adı ve kodu zorunludur!');
-    return;
-  }
-  
-  try {
-    const token = localStorage.getItem('access_token'); // Düzelt
-    const url = editMode 
-      ? `http://127.0.0.1:8000/dersler/${selectedDers.id}`
-      : 'http://127.0.0.1:8000/dersler/';
-    
-    const response = await fetch(url, {
-      method: editMode ? 'PUT' : 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData)
-    });
-
-    if (response.ok) {
-      fetchDersler();
-      handleCloseModal();
-      alert(editMode ? 'Ders güncellendi!' : 'Ders oluşturuldu!');
-    } else {
-      const error = await response.json();
-      alert(error.detail || 'Bir hata oluştu');
+  const handleSubmit = async () => {
+    if (!formData.ad || !formData.kod) {
+      alert('Ders adı ve kodu zorunludur!');
+      return;
     }
-  } catch (error) {
-    console.error('Hata:', error);
-    alert('Bir hata oluştu');
-  }
-};
 
-const handleDelete = async (id) => {
-  if (!confirm('Bu dersi silmek istediğinize emin misiniz?')) return;
-  
-  try {
-    const token = localStorage.getItem('access_token'); // Düzelt
-    const response = await fetch(`http://127.0.0.1:8000/dersler/${id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    try {
+      const token = localStorage.getItem('access_token');
+      const url = editMode
+        ? `${API_URL}/dersler/${selectedDers.id}`
+        : `${API_URL}/dersler/`;
 
-    if (response.ok) {
-      fetchDersler();
-      alert('Ders silindi!');
+      const response = await fetch(url, {
+        method: editMode ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        fetchDersler();
+        handleCloseModal();
+        alert(editMode ? 'Ders güncellendi!' : 'Ders oluşturuldu!');
+      } else {
+        const error = await response.json();
+        alert(error.detail || 'Bir hata oluştu');
+      }
+    } catch (error) {
+      console.error('Hata:', error);
+      alert('Bir hata oluştu');
     }
-  } catch (error) {
-    console.error('Hata:', error);
-  }
-};
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Bu dersi silmek istediğinize emin misiniz?')) return;
+
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_URL}/dersler/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        fetchDersler();
+        alert('Ders silindi!');
+      }
+    } catch (error) {
+      console.error('Hata:', error);
+    }
+  };
 
   const handleOpenModal = (ders = null) => {
     if (ders) {
@@ -97,6 +103,8 @@ const handleDelete = async (id) => {
       setFormData({
         ad: ders.ad,
         kod: ders.kod,
+        hoca_adi: ders.hoca_adi || '',
+        hoca_mail: ders.hoca_mail || '',
         aciklama: ders.aciklama || '',
         aktif: ders.aktif
       });
@@ -106,6 +114,8 @@ const handleDelete = async (id) => {
       setFormData({
         ad: '',
         kod: '',
+        hoca_adi: '',
+        hoca_mail: '',
         aciklama: '',
         aktif: true
       });
@@ -120,6 +130,8 @@ const handleDelete = async (id) => {
     setFormData({
       ad: '',
       kod: '',
+      hoca_adi: '',
+      hoca_mail: '',
       aciklama: '',
       aktif: true
     });
@@ -136,8 +148,8 @@ const handleDelete = async (id) => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb', padding: '24px' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        <Link 
-          to="/dashboard" 
+        <Link
+          to="/dashboard"
           style={{ display: 'inline-flex', alignItems: 'center', color: '#667eea', textDecoration: 'none', marginBottom: '24px' }}
         >
           ← Geri
@@ -190,7 +202,7 @@ const handleDelete = async (id) => {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
             {dersler.map((ders) => (
-              <div 
+              <div
                 key={ders.id}
                 style={{
                   backgroundColor: 'white',
@@ -205,6 +217,16 @@ const handleDelete = async (id) => {
                     <p style={{ color: '#667eea', fontSize: '14px', marginTop: '4px', fontWeight: '600' }}>
                       Kod: {ders.kod}
                     </p>
+                    {ders.hoca_adi && (
+                      <p style={{ color: '#374151', fontSize: '14px', marginTop: '4px' }}>
+                        👨‍🏫 {ders.hoca_adi}
+                      </p>
+                    )}
+                    {ders.hoca_mail && (
+                      <p style={{ color: '#6b7280', fontSize: '13px', marginTop: '2px' }}>
+                        ✉️ {ders.hoca_mail}
+                      </p>
+                    )}
                     {ders.aciklama && (
                       <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '8px' }}>{ders.aciklama}</p>
                     )}
@@ -214,16 +236,16 @@ const handleDelete = async (id) => {
                     borderRadius: '9999px',
                     fontSize: '12px',
                     fontWeight: '600',
-                    backgroundColor: ders.aktif ? '#d1fae5' : '#fee2e2',
-                    color: ders.aktif ? '#065f46' : '#991b1b'
+                    backgroundColor: ders.aktif == 1 ? '#d1fae5' : '#fee2e2',
+                    color: ders.aktif == 1 ? '#065f46' : '#991b1b'
                   }}>
-                    {ders.aktif ? 'Aktif' : 'Pasif'}
+                    {ders.aktif == 1 ? 'Aktif' : 'Pasif'}
                   </span>
                 </div>
 
                 <div style={{ marginBottom: '16px', color: '#6b7280' }}>
                   <span style={{ marginRight: '8px' }}>📅</span>
-                  {new Date(ders.olusturulma_tarihi).toLocaleDateString('tr-TR')}
+                  {new Date(ders.olusturma_tarihi).toLocaleDateString('tr-TR')}
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -279,7 +301,9 @@ const handleDelete = async (id) => {
             borderRadius: '8px',
             maxWidth: '500px',
             width: '100%',
-            padding: '24px'
+            padding: '24px',
+            maxHeight: '90vh',
+            overflowY: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '24px', fontWeight: 'bold' }}>
@@ -300,6 +324,7 @@ const handleDelete = async (id) => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Ders Adı */}
               <div>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
                   Ders Adı *
@@ -308,18 +333,20 @@ const handleDelete = async (id) => {
                   type="text"
                   required
                   value={formData.ad}
-                  onChange={(e) => setFormData({...formData, ad: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, ad: e.target.value })}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
                     border: '1px solid #d1d5db',
                     borderRadius: '6px',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
                   placeholder="Örn: Matematik"
                 />
               </div>
 
+              {/* Ders Kodu */}
               <div>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
                   Ders Kodu *
@@ -328,43 +355,89 @@ const handleDelete = async (id) => {
                   type="text"
                   required
                   value={formData.kod}
-                  onChange={(e) => setFormData({...formData, kod: e.target.value})}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '6px',
-                    fontSize: '14px'
-                  }}
-                  placeholder="Örn: MAT101"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
-                  Açıklama
-                </label>
-                <textarea
-                  value={formData.aciklama}
-                  onChange={(e) => setFormData({...formData, aciklama: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, kod: e.target.value })}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
                     border: '1px solid #d1d5db',
                     borderRadius: '6px',
                     fontSize: '14px',
-                    minHeight: '80px'
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="Örn: MAT101"
+                />
+              </div>
+
+              {/* Hoca Adı */}
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Hoca Adı
+                </label>
+                <input
+                  type="text"
+                  value={formData.hoca_adi}
+                  onChange={(e) => setFormData({ ...formData, hoca_adi: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="Prof. Dr. Ahmet Yılmaz"
+                />
+              </div>
+
+              {/* Hoca E-posta */}
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Hoca E-posta
+                </label>
+                <input
+                  type="email"
+                  value={formData.hoca_mail}
+                  onChange={(e) => setFormData({ ...formData, hoca_mail: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
+                  }}
+                  placeholder="prof.ahmet@universite.edu"
+                />
+              </div>
+
+              {/* Açıklama */}
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Açıklama
+                </label>
+                <textarea
+                  value={formData.aciklama}
+                  onChange={(e) => setFormData({ ...formData, aciklama: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    minHeight: '80px',
+                    boxSizing: 'border-box'
                   }}
                   placeholder="Ders hakkında açıklama"
                 />
               </div>
 
+              {/* Aktif */}
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <input
                   type="checkbox"
                   id="aktif"
                   checked={formData.aktif}
-                  onChange={(e) => setFormData({...formData, aktif: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, aktif: e.target.checked })}
                   style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                 />
                 <label htmlFor="aktif" style={{ marginLeft: '8px', fontSize: '14px', color: '#374151' }}>
@@ -372,6 +445,7 @@ const handleDelete = async (id) => {
                 </label>
               </div>
 
+              {/* Butonlar */}
               <div style={{ display: 'flex', gap: '12px', paddingTop: '16px' }}>
                 <button
                   type="button"

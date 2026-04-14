@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../services/axiosConfig';
 import { toast } from 'react-toastify';
+import sinifService from '../services/sinifService';
+import { API_URL } from '../config';
 
 const SinifYonetim = () => {
   const [siniflar, setSiniflar] = useState([]);
@@ -23,9 +25,10 @@ const SinifYonetim = () => {
   const fetchSiniflar = async () => {
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const response = await fetch('http://127.0.0.1:8000/siniflar/', {
+      const response = await fetch(`${API_URL}/siniflar/`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true' 
         }
       });
       
@@ -50,15 +53,16 @@ const SinifYonetim = () => {
 
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const url = editMode 
-        ? `http://127.0.0.1:8000/siniflar/${selectedSinif.id}/`
-        : 'http://127.0.0.1:8000/siniflar/';
+      const url = editMode
+        ? `${API_URL}/siniflar/${selectedSinif.id}/`
+        : `${API_URL}/siniflar/`;
       
       const response = await fetch(url, {
         method: editMode ? 'PUT' : 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
         body: JSON.stringify({
           ad: formData.ad,
@@ -87,10 +91,11 @@ const SinifYonetim = () => {
     
     try {
       const token = localStorage.getItem('token') || localStorage.getItem('access_token');
-      const response = await fetch(`http://127.0.0.1:8000/siniflar/${id}/`, {
+      const response = await fetch(`${API_URL}/siniflar/${id}/`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true' 
         }
       });
 
@@ -231,10 +236,6 @@ const SinifYonetim = () => {
                   <div style={{ color: '#6b7280', marginBottom: '8px' }}>
                     <span style={{ marginRight: '8px' }}>👥</span>
                     Kapasite: {sinif.kapasite}
-                  </div>
-                  <div style={{ color: '#6b7280' }}>
-                    <span style={{ marginRight: '8px' }}>📅</span>
-                    {new Date(sinif.olusturulma_tarihi).toLocaleDateString('tr-TR')}
                   </div>
                 </div>
 

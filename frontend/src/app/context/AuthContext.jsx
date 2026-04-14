@@ -1,64 +1,130 @@
 import { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_URL } from '../config'; // config dosyanın yolunun doğru olduğundan emin ol
+import authService from '../../services/authService';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  // Başlangıçta loading true olmalı ki kontrol bitmeden login'e atmasın
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkUserLoggedIn();
+    const loadUser = async () => {
+      console.log('🔍 AuthContext: Kullanıcı kontrol ediliyor...');
+      
+      const token = localStorage.getItem('access_token'); 
+      const savedUser = localStorage.getItem('user');
+
+      if (!token) {
+        console.log('❌ Token yok');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Önce localStorage'dan yükle
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          console.log('✅ LocalStorage\'dan user yüklendi:', userData);
+          setUser(userData);
+        }
+        
+        // Sonra backend'den güncel veriyi al
+        const userData = await authService.getMe();
+        console.log('✅ Backend\'den user alındı:', userData);
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        
+      } catch (error) {
+        console.error('⚠️ Token geçersiz, kullanıcı çıkış yaptı');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUser();
   }, []);
 
-  // Sayfa yenilendiğinde çalışacak kritik fonksiyon
-  const checkUserLoggedIn = async () => {
-    const token = localStorage.getItem('access_token');
-    
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
+  const login = async (mail, sifre) => {
     try {
-      console.log("🔄 Oturum kontrol ediliyor...");
-      // Token varsa backend'e sor: "Bu kim?"
-      const response = await axios.get(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      console.log('🔑 LOGIN BAŞLADI:', { mail });
       
-      console.log("✅ Kullanıcı doğrulandı:", response.data);
-      setUser(response.data); // Kullanıcıyı içeri al
+      const response = await authService.login(mail, sifre);
+      console.log('✅ LOGIN RESPONSE:', response);
+      
+      // User verisini al
+      let userData;
+      
+      if (response.user) {
+        userData = response.user;
+      } else {
+        userData = await authService.getMe();
+      }
+      
+      console.log('👤 USER DATA:', userData);
+      
+      // State ve localStorage'a kaydet
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      return response;
     } catch (error) {
-      console.error("❌ Oturum geçersiz:", error);
-      // Token geçersizse temizle
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('admin_user');
-      setUser(null);
-    } finally {
-      setLoading(false); // Kontrol bitti, kapıları aç
+      console.error('❌ LOGIN HATASI:', error);
+      throw error;
     }
   };
 
-  const login = async (mail, sifre) => {
-    // Login işlemini LoginPage.jsx yapıyor, burası sadece state güncellerse yeterli
-    // Ancak AuthContext üzerinden yapmak istersen burayı doldurabiliriz.
-    // Şimdilik boş bırakıyorum çünkü LoginPage.jsx her şeyi hallediyor.
+  const register = async (data) => {
+    try {
+      console.log('📝 REGISTER BAŞLADI:', data);
+      
+      const response = await authService.register(data);
+      console.log('✅ REGISTER RESPONSE:', response);
+      
+      // User verisini al
+      let userData;
+      
+      if (response.user) {
+        userData = response.user;
+      } else {
+        userData = await authService.getMe();
+      }
+      
+      console.log('👤 USER DATA:', userData);
+      
+      // State ve localStorage'a kaydet
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      return response;
+    } catch (error) {
+      console.error('❌ REGISTER HATASI:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
+    console.log('👋 LOGOUT');
+    setUser(null);
+    localStorage.removeItem('user');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    localStorage.removeItem('admin_user');
-    setUser(null);
-    window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        register,
+        logout,
+        isAuthenticated: !!user,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

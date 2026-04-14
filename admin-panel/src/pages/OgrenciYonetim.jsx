@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-
+import ogrenciService from '../services/ogrenciServices';
+import api from '../services/axiosConfig'
 
 const OgrenciYonetimi = () => {
   const [ogrenciler, setOgrenciler] = useState([]);

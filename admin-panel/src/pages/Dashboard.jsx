@@ -22,7 +22,7 @@ const Dashboard = () => {
     <div style={styles.container}>
       <header style={styles.header}>
         <div>
-          <h1>🎓 Yoklama Sistemi - Admin Panel</h1>
+          <h1>BAİBU E-Yoklama - Admin Panel</h1>
           <p style={{ color: '#666', marginTop: '5px' }}>Hoş geldiniz, {user?.ad}</p>
         </div>
         <button onClick={logout} style={styles.logoutBtn}>Çıkış Yap</button>
@@ -41,11 +41,11 @@ const Dashboard = () => {
           <p>Haftalık ders programını yönet</p>
         </Link>
 
-        <Link to="/ogrenciler" style={styles.card}>
+        {/*<Link to="/ogrenciler" style={styles.card}>
           <div style={styles.icon}>👥</div>
           <h3>Öğrenci Yönetimi</h3>
           <p>Öğrenci ekle/düzenle/listele</p>
-        </Link>
+        </Link> */}
 
         <Link to="/dersler" style={styles.card}>
           <div style={styles.icon}>📚</div>
@@ -59,11 +59,11 @@ const Dashboard = () => {
           <p>Tüm QR kodları görüntüle/yazdır</p>
         </Link>
 
-        <Link to="/raporlar" style={styles.card}>
+        {/*<Link to="/raporlar" style={styles.card}>
           <div style={styles.icon}>📊</div>
           <h3>Raporlar</h3>
           <p>Yoklama istatistikleri</p>
-        </Link>
+        </Link> */}
       </div>
     </div>
   );

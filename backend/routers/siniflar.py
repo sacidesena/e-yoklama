@@ -66,7 +66,12 @@ async def create_sinif(
         )
     
     # Yeni sınıf oluştur
-    new_sinif = Sinif(ad=sinif_data.ad)
+    new_sinif = Sinif(
+    ad=sinif_data.ad,
+    aciklama=sinif_data.aciklama,
+    kapasite=sinif_data.kapasite,
+    aktif=sinif_data.aktif if sinif_data.aktif is not None else True
+)
     
     db.add(new_sinif)
     db.commit()
@@ -99,6 +104,13 @@ async def update_sinif(
                 detail=f"'{sinif_data.ad}' isimli sınıf zaten mevcut"
             )
         sinif.ad = sinif_data.ad
+
+    if sinif_data.aciklama is not None:
+        sinif.aciklama = sinif_data.aciklama
+    if sinif_data.kapasite is not None:
+        sinif.kapasite = sinif_data.kapasite
+    if sinif_data.aktif is not None:
+        sinif.aktif = sinif_data.aktif
     
     db.commit()
     db.refresh(sinif)
@@ -160,7 +172,7 @@ async def get_sinif_program(
             program_dict[prog.gun] = []
         
         ders = db.query(Ders).filter(Ders.id == prog.ders_id).first()
-        ogretmen = db.query(Kullanici).filter(Kullanici.id == prog.ogretmen_id).first()
+        ogretmen = db.query(Kullanici).filter(Kullanici.id == prog.ogretmen_mail).first()
         
         program_dict[prog.gun].append({
             "id": prog.id,

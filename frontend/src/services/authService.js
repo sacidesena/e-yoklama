@@ -1,63 +1,60 @@
 import api from './axiosConfig';
 
 const authService = {
-  // Login İşlemi (Form Data Formatında)
   login: async (mail, sifre) => {
     try {
-      console.log('🔑 Login isteği hazırlanıyor:', { mail });
-
-      // ⚠️ KRİTİK NOKTA: JSON yerine URLSearchParams kullanıyoruz
+      console.log('🔑 Login request:', { mail });
+      
+      // OAuth2 format (form-urlencoded)
       const formData = new URLSearchParams();
-      formData.append('username', mail);  // Backend 'username' bekliyor
-      formData.append('password', sifre); // Backend 'password' bekliyor
-
+      formData.append('username', mail);
+      formData.append('password', sifre);
+      
       const response = await api.post('/auth/login', formData, {
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded', // Header'ı özellikle belirtiyoruz
-        },
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
       });
-
-      console.log('✅ Login başarılı, Token alındı.');
-
-      // Tokenları kaydet
-      const { access_token, refresh_token } = response.data;
-      if (access_token) localStorage.setItem('access_token', access_token);
-      if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
-
-      // Not: Login sadece token döner, kullanıcı bilgilerini Context içinde getMe ile çekeceğiz.
-      return response.data;
-    } catch (error) {
-      console.error('❌ Login error:', error.response?.data || error.message);
-      throw error;
-    }
-  },
-
-  // Register İşlemi (Burası JSON kalabilir, Backend Schema bekliyor)
-  register: async (data) => {
-    try {
-      console.log('📝 Register isteği:', data);
-      const response = await api.post('/auth/register', data);
       
-      console.log('✅ Register başarılı.');
-
-      // Kayıt sonrası otomatik giriş için tokenları kaydet
-      const { access_token, refresh_token } = response.data;
-      if (access_token) localStorage.setItem('access_token', access_token);
-      if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
-
+      console.log('✅ Login response:', response.data);
+      
+      // Token'ı kaydet
+      if (response.data.access_token) {
+        localStorage.setItem('access_token', response.data.access_token); // ✅ 'token' olarak kaydet
+        localStorage.setItem('refresh_token', response.data.refresh_token);
+      }
+      
       return response.data;
     } catch (error) {
-      console.error('❌ Register error:', error.response?.data || error.message);
+      console.error('❌ Login error:', error.response?.data || error);
       throw error;
     }
   },
 
-  // Kullanıcı Bilgilerini Getir
+  register: async (userData) => {
+    try {
+      console.log('📝 Register request:', userData);
+      const response = await api.post('/auth/register', userData);
+      console.log('✅ Register response:', response.data);
+      
+      // Token'ı kaydet
+      if (response.data.access_token) {
+        localStorage.setItem('access_token', response.data.access_token);
+        localStorage.setItem('refresh_token', response.data.refresh_token);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ Register error:', error.response?.data || error);
+      throw error;
+    }
+  },
+
   getMe: async () => {
     try {
-      // Token axiosConfig tarafından otomatik eklenecek
+      console.log('👤 Getting current user...');
       const response = await api.get('/auth/me');
-      console.log('👤 Kullanıcı bilgileri:', response.data);
+      console.log('✅ User data:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ GetMe error:', error);
@@ -65,19 +62,10 @@ const authService = {
     }
   },
 
-  // LocalStorage'dan kullanıcıyı okuma (Senkron)
-  getCurrentUser: () => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) return JSON.parse(userStr);
-    return null;
-  },
-
-  // Çıkış
   logout: () => {
-    localStorage.removeItem('access_token');
+    localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    // window.location.href = '/login'; // İsteğe bağlı yönlendirme
   }
 };
 

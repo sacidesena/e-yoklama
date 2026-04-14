@@ -65,7 +65,14 @@ async def create_ders(
             detail=f"'{ders_data.ad}' isimli ders zaten mevcut"
         )
     
-    new_ders = Ders(ad=ders_data.ad)
+    new_ders = Ders(
+    ad=ders_data.ad,
+    kod=ders_data.kod,
+    hoca_adi=ders_data.hoca_adi,
+    hoca_mail=ders_data.hoca_mail,
+    aciklama=ders_data.aciklama,
+    aktif=ders_data.aktif if ders_data.aktif is not None else True
+)
     
     db.add(new_ders)
     db.commit()
@@ -80,27 +87,33 @@ async def update_ders(
     db: Session = Depends(get_db),
     current_user: Kullanici = Depends(get_admin_or_teacher)
 ):
-    """Ders bilgilerini güncelle"""
     ders = db.query(Ders).filter(Ders.id == ders_id).first()
-    
     if not ders:
         raise HTTPException(status_code=404, detail="Ders bulunamadı")
-    
-    if ders_data.ad and ders_data.ad != ders.ad:
+
+    if ders_data.ad is not None:
         existing = db.query(Ders).filter(
             Ders.ad == ders_data.ad,
             Ders.id != ders_id
         ).first()
         if existing:
-            raise HTTPException(
-                status_code=400,
-                detail=f"'{ders_data.ad}' isimli ders zaten mevcut"
-            )
+            raise HTTPException(status_code=400, detail=f"'{ders_data.ad}' isimli ders zaten mevcut")
         ders.ad = ders_data.ad
-    
+
+    # ✅ DİĞER ALANLARI DA GÜNCELLE
+    if ders_data.kod is not None:
+        ders.kod = ders_data.kod
+    if ders_data.hoca_adi is not None:
+        ders.hoca_adi = ders_data.hoca_adi
+    if ders_data.hoca_mail is not None:
+        ders.hoca_mail = ders_data.hoca_mail
+    if ders_data.aciklama is not None:
+        ders.aciklama = ders_data.aciklama
+    if ders_data.aktif is not None:
+        ders.aktif = ders_data.aktif
+
     db.commit()
     db.refresh(ders)
-    
     return ders
 
 @router.delete("/{ders_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -157,20 +170,19 @@ async def list_program(
     for prog in programlar:
         ders = db.query(Ders).filter(Ders.id == prog.ders_id).first()
         sinif = db.query(Sinif).filter(Sinif.id == prog.sinif_id).first()
-        ogretmen = db.query(Kullanici).filter(Kullanici.id == prog.ogretmen_id).first()
+        
         
         result.append({
             "id": prog.id,
             "ders_id": prog.ders_id,
             "sinif_id": prog.sinif_id,
-            "ogretmen_id": prog.ogretmen_id,
+            "ogretmen_mail": prog.ogretmen_mail,
             "gun": prog.gun,
             "baslangic": prog.baslangic,
             "bitis": prog.bitis,
             "aktif": prog.aktif,
             "ders_adi": ders.ad if ders else None,
             "sinif_adi": sinif.ad if sinif else None,
-            "ogretmen_adi": ogretmen.ad if ogretmen else None
         })
     
     return result
@@ -193,13 +205,14 @@ async def create_program(
         raise HTTPException(status_code=404, detail="Sınıf bulunamadı")
     
     # Öğretmen var mı?
-    ogretmen = db.query(Kullanici).filter(
-        Kullanici.id == program_data.ogretmen_id,
+    """ogretmen = db.query(Kullanici).filter(
+        Kullanici.id == program_data.ogretmen_mail,
         Kullanici.rol == "ogretmen"
     ).first()
     if not ogretmen:
         raise HTTPException(status_code=404, detail="Öğretmen bulunamadı")
-    
+    """
+
     # Saat parse et
     try:
         baslangic = dt_time.fromisoformat(program_data.baslangic)
@@ -253,7 +266,7 @@ async def create_program(
         "aktif": new_program.aktif,
         "ders_adi": ders.ad,
         "sinif_adi": sinif.ad,
-        "ogretmen_adi": ogretmen.ad
+        "ogretmen_adi": None
     }
 
 @router.get("/program/{program_id}", response_model=ProgramResponse)
@@ -270,13 +283,13 @@ async def get_program(
     
     ders = db.query(Ders).filter(Ders.id == program.ders_id).first()
     sinif = db.query(Sinif).filter(Sinif.id == program.sinif_id).first()
-    ogretmen = db.query(Kullanici).filter(Kullanici.id == program.ogretmen_id).first()
+    ogretmen = db.query(Kullanici).filter(Kullanici.id == program.ogretmen_mail).first()
     
     return {
         "id": program.id,
         "ders_id": program.ders_id,
         "sinif_id": program.sinif_id,
-        "ogretmen_id": program.ogretmen_id,
+        "ogretmen_mail": program.ogretmen_mail,
         "gun": program.gun,
         "baslangic": program.baslangic,
         "bitis": program.bitis,
@@ -304,8 +317,8 @@ async def update_program(
         program.ders_id = program_data.ders_id
     if program_data.sinif_id is not None:
         program.sinif_id = program_data.sinif_id
-    if program_data.ogretmen_id is not None:
-        program.ogretmen_id = program_data.ogretmen_id
+    if program_data.ogretmen_mail is not None:
+        program.ogretmen_mail = program_data.ogretmen_mail
     if program_data.gun is not None:
         program.gun = program_data.gun
     if program_data.baslangic is not None:
@@ -320,13 +333,13 @@ async def update_program(
     
     ders = db.query(Ders).filter(Ders.id == program.ders_id).first()
     sinif = db.query(Sinif).filter(Sinif.id == program.sinif_id).first()
-    ogretmen = db.query(Kullanici).filter(Kullanici.id == program.ogretmen_id).first()
+    ogretmen = db.query(Kullanici).filter(Kullanici.id == program.ogretmen_mail).first()
     
     return {
         "id": program.id,
         "ders_id": program.ders_id,
         "sinif_id": program.sinif_id,
-        "ogretmen_id": program.ogretmen_id,
+        "ogretmen_mail": program.ogretmen_mail,
         "gun": program.gun,
         "baslangic": program.baslangic,
         "bitis": program.bitis,

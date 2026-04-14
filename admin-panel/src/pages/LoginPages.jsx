@@ -24,7 +24,8 @@ const LoginPage = () => {
       // 1. Login
       const response = await axios.post(`${API_URL}/auth/login`, formData, {
         headers: { 
-          'Content-Type': 'application/x-www-form-urlencoded' 
+          'Content-Type': 'application/x-www-form-urlencoded' ,'ngrok-skip-browser-warning': 'true' 
+          
         }
       });
 
@@ -34,7 +35,8 @@ const LoginPage = () => {
       // 2. User bilgisi
       const userResponse = await axios.get(`${API_URL}/auth/me`, {
         headers: { 
-          Authorization: `Bearer ${access_token}` 
+          Authorization: `Bearer ${access_token}`,
+          'ngrok-skip-browser-warning': 'true'  
         }
       });
 

@@ -143,7 +143,7 @@ const DashboardPage = () => {
                     backgroundColor: yoklama.durum === 'Gecikti' ? '#fef3c7' : '#dcfce7',
                     color: yoklama.durum === 'Gecikti' ? '#92400e' : '#166534',
                   }}>
-                    {yoklama.durum || 'Geldi'}
+                    {yoklama.durum || 'Katıldı'}
                   </span>
                 </div>
               ))}

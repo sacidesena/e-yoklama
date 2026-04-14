@@ -1,6 +1,8 @@
 // API Base URL - ortama göre otomatik ayarlanır
-export const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.24:8000';
+//export const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.1.24:8000';
 //export const API_URL = import.meta.env.VITE_API_URL || 'http://172.19.23.245:8000';
+
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 
 // Alternatif olarak otomatik tespit:

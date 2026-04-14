@@ -75,7 +75,7 @@ async def ders_bitis_kontrol():
                     continue
 
                 # ✅ TZ-aware datetime.combine
-                bitis_datetime = datetime.combine(bugun, program.bitis).replace(tzinfo=TZ)
+                bitis_datetime = TZ.localize(datetime.combine(bugun, program.bitis))
                 bitis_plus_5 = bitis_datetime + timedelta(minutes=5)
 
                 if simdi < bitis_plus_5:
@@ -94,8 +94,8 @@ async def ders_bitis_kontrol():
                         db.rollback()
                     continue
 
-                bugun_start = datetime.combine(bugun, datetime.min.time()).replace(tzinfo=TZ)
-                bugun_end = datetime.combine(bugun, datetime.max.time()).replace(tzinfo=TZ)
+                bugun_start = TZ.localize(datetime.combine(bugun, datetime.min.time()))
+                bugun_end = TZ.localize(datetime.combine(bugun, datetime.max.time()))
 
                 yoklamalar = db.query(Yoklama).filter(
                     Yoklama.ders_id == program.ders_id,

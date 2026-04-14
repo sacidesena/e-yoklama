@@ -20,7 +20,7 @@ const Program = () => {
     aktif: true
   });
 
-  const gunler = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma','Cumartesi'];
+  const gunler = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma','Cumartesi','Pazar'];
 
   const getHeaders = () => {
     const token = localStorage.getItem('access_token');
@@ -235,7 +235,7 @@ const Program = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>Ders *</label>
-                <select value={formData.ders_id} onChange={(e) => setFormData({...formData, ders_id: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}>
+                <select value={formData.ders_id} onChange={(e) => {const secilenDers = dersler.find(d => d.id === parseInt(e.target.value)); setFormData({...formData, ders_id: e.target.value , ogretmen_mail: secilenDers?.hoca_mail || ''});}} style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}>
                   <option value="">Ders Seçin</option>
                   {dersler.map(ders => <option key={ders.id} value={ders.id}>{ders.ad} ({ders.kod})</option>)}
                 </select>
@@ -251,7 +251,7 @@ const Program = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>Öğretmen E-posta</label>
-                <input type="email" value={formData.ogretmen_mail} onChange={(e) => setFormData({...formData, ogretmen_mail: e.target.value})} style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }} placeholder="ogretmen@okul.edu" />
+                <input type="email" value={formData.ogretmen_mail} readOnly style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }} placeholder="ogretmen@okul.edu" />
               </div>
 
               <div>

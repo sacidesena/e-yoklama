@@ -7,4 +7,6 @@
 
 //export const API_URL = import.meta.env.VITE_API_URL || 'https://192.168.56.1:8000';
 
-export const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+//export const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+
+export const API_URL = import.meta.env.VITE_API_URL || '/api';

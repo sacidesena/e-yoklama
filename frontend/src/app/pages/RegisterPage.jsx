@@ -22,6 +22,10 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.mail.endsWith('@ogrenci.ibu.edu.tr')) {
+      toast.error('Lütfen okul mail adresinizi kullanın (@ogrenci.ibu.edu.tr)');
+      return;
+    }
     if (formData.sifre !== formData.sifreTekrar) {
       toast.error('Şifreler eşleşmiyor!');
       return;

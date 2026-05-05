@@ -37,7 +37,7 @@ def ders_saatinde_mi(program: Program) -> tuple[bool, str]:
         return False, f"Bu ders {program.gun} günü. Bugün {bugun}."
 
     suanki_saat = simdi.time()
-    baslangic_oncesi = (datetime.combine(date.today(), program.baslangic) - timedelta(minutes=10)).time()
+    baslangic_oncesi = (datetime.combine(date.today(), program.baslangic) - timedelta(minutes=5)).time()
     # ✅ DÜZELTME: bitis'e göre hesapla, baslangic'a göre değil
     bitis_sonrasi = (datetime.combine(date.today(), program.bitis) + timedelta(minutes=15)).time()
 
@@ -194,7 +194,7 @@ async def submit_yoklama(
 
     uygun_program = None
     for prog in aktif_program:
-        baslangic_oncesi = (datetime.combine(date.today(), prog.baslangic) - timedelta(minutes=10)).time()
+        baslangic_oncesi = (datetime.combine(date.today(), prog.baslangic) - timedelta(minutes=5)).time()
         # ✅ DÜZELTME: bitis'e göre hesapla
         bitis_sonrasi = (datetime.combine(date.today(), prog.bitis) + timedelta(minutes=15)).time()
         if baslangic_oncesi <= suanki_saat <= bitis_sonrasi:
@@ -225,25 +225,31 @@ async def submit_yoklama(
     # ✅ IP + Fingerprint kontrolü (NAT ortamı için güvenli)
     client_ip = get_client_ip(request)
     client_fingerprint = yoklama_data.device_fingerprint
-    ders_baslangic = datetime.combine(date.today(), uygun_program.baslangic)
-    ders_bitis = datetime.combine(date.today(), uygun_program.bitis)
 
-    ayni_ip_yoklama = db.query(Yoklama).filter(
-        Yoklama.ders_id == uygun_program.ders_id,
-        Yoklama.sinif_id == yoklama_data.sinif_id,
-        Yoklama.ip_adresi == client_ip,
-        Yoklama.ogrenci_id != current_user.id,
-        Yoklama.zaman >= ders_baslangic,
-        Yoklama.zaman <= ders_bitis
+# ✅ KONTROL 1: Bu cihaz başka öğrenciye kayıtlı mı?
+    baska_ogrenci = db.query(Kullanici).filter(
+        Kullanici.device_fingerprint == client_fingerprint,
+        Kullanici.id != current_user.id
     ).first()
 
-    # ✅ Aynı IP'den farklı fingerprint → izin ver (farklı cihaz)
-    # Aynı IP'den aynı fingerprint → engelle (aynı cihaz)
-    if ayni_ip_yoklama and ayni_ip_yoklama.device_fingerprint == client_fingerprint:
+    if baska_ogrenci:
         raise HTTPException(
-            status_code=400,
-            detail="Bu cihazdan bu ders için zaten başka bir öğrenci yoklama vermiş."
+            status_code=403,
+            detail="Bu cihaz başka bir öğrenciye kayıtlı. Her öğrenci kendi cihazını kullanmalıdır."
         )
+
+# ✅ KONTROL 2: Bu öğrencinin kayıtlı cihazı farklı mı?
+    if current_user.device_fingerprint and      current_user.device_fingerprint !=  client_fingerprint:
+        raise HTTPException(
+            status_code=403,
+            detail="Bu cihaz hesabınıza kayıtlı değil. Lütfen kayıtlı cihazınızı kullanın."
+    )   
+
+# ✅ KONTROL 3: İlk yoklama ise cihazı kaydet
+    if not current_user.device_fingerprint:
+        current_user.device_fingerprint = client_fingerprint
+        db.commit()
+
 
     # Konum
     konum_str = None

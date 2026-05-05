@@ -47,8 +47,10 @@ services:
     container_name: eyoklama-nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro  
+     - ./certs:/etc/nginx/certs:ro
     depends_on:
       - frontend
       - backend

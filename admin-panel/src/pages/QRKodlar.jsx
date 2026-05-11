@@ -78,7 +78,7 @@ const QRKodlar = () => {
 
  const printQR = (qr) => {
     const sinifAdi = qr.sinif_adi || getSinifAdi(qr.sinif_id);
-    const url = import.meta.env.VITE_BASE_URL || `http://${window.location.hostname}:5173`;
+    // = import.meta.env.VITE_BASE_URL || `http://${window.location.hostname}:5173`;
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
@@ -234,7 +234,7 @@ const QRKodlar = () => {
                 <img src="${qr.qr_image}" alt="QR Kod" />
               </div>
 
-              <div class="url">🌐 ${url}</div>
+              // <div class="url">🌐 ${url}</div>
 
               <div class="steps">
                 <div class="step">
@@ -439,6 +439,7 @@ const QRKodlar = () => {
         )}
 
         {/* İstatistikler */}
+        {/*
         <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '20px', marginTop: '24px' }}>
           <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '12px' }}>📊 İstatistikler</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px' }}>
@@ -455,7 +456,7 @@ const QRKodlar = () => {
               <div style={{ fontSize: '14px', color: '#6b7280' }}>Pasif QR</div>
             </div>
           </div>
-        </div>
+        </div>  */}
 
       </div>
     </div>

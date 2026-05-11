@@ -124,3 +124,4 @@ class MailLog(Base):
     program_id = Column(Integer, ForeignKey("program.id"), nullable=False)
     gonderim_tarihi = Column(Date, nullable=False)
     gonderildi_zaman = Column(DateTime, default=datetime.utcnow)
+

@@ -47,6 +47,7 @@ class KullaniciResponse(BaseModel):
     ogrenci_no: Optional[str] = None
     son_giris: Optional[datetime] = None
     kayit_tarihi: datetime
+    device_fingerprint: Optional[str] = None 
 
     class Config:
         from_attributes = True

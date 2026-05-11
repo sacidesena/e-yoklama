@@ -22,7 +22,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   return (
     <BrowserRouter>
-      {/* 👇 2. TÜM ROTALARI BU KAPSAYICI İÇİNE ALMALIYIZ 👇 */}
+      {/* 2. TÜM ROTALARI BU KAPSAYICI İÇİNE ALMALIYIZ */}
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -83,7 +83,7 @@ function App() {
           hideProgressBar={false}
         />
       </AuthProvider>
-      {/* 👆 KAPSAYICI BİTİŞ 👆 */}
+      {/* KAPSAYICI BİTİŞ */}
     </BrowserRouter>
   );
 }

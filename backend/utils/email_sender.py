@@ -14,8 +14,8 @@ from openpyxl.styles import Font, PatternFill, Alignment
 
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USER = os.getenv("SENDER_EMAIL")
-SMTP_PASSWORD = os.getenv("SENDER_PASSWORD")
+#SMTP_USER = os.getenv("SENDER_EMAIL")
+#SMTP_PASSWORD = os.getenv("SENDER_PASSWORD")
 
 
 def create_excel(katilan_ogrenciler, ders_adi, sinif_adi, tarih, baslangic, bitis):
@@ -89,9 +89,21 @@ def send_yoklama_list_to_teacher(
     baslangic: str,
     bitis: str,
     katilan_ogrenciler: list,
-    katilmayan_ogrenciler: list
+    katilmayan_ogrenciler: list,
+    db=None 
 ):
-    if not SMTP_USER or not SMTP_PASSWORD:
+    
+    if db:
+        from models import Ayarlar
+        mail_ayari = db.query(Ayarlar).filter(Ayarlar.anahtar == "sender_email").first()
+        sifre_ayari = db.query(Ayarlar).filter(Ayarlar.anahtar == "sender_password").first()
+        smtp_user = mail_ayari.deger if mail_ayari else os.getenv("SENDER_EMAIL")
+        smtp_password = sifre_ayari.deger if sifre_ayari else os.getenv("SENDER_PASSWORD")
+    else:
+        smtp_user = os.getenv("SENDER_EMAIL")
+        smtp_password = os.getenv("SENDER_PASSWORD")
+
+    if not smtp_user or not smtp_password:
         print("⚠️ Email ayarları yapılmamış, mail gönderilemiyor")
         return False
 
@@ -181,9 +193,11 @@ def send_yoklama_list_to_teacher(
     """
 
     try:
+        msg['Reply-To'] = smtp_user
+        msg['X-Mailer'] = 'BAİBU E-Yoklama'
         msg = MIMEMultipart('mixed')
         msg['Subject'] = Header(subject, 'utf-8')
-        msg['From'] = f"BAİBÜ E-Yoklama <{SMTP_USER}>"
+        msg['From'] = f"BAİBÜ E-Yoklama <{smtp_user}>"
         msg['To'] = hoca_mail
 
         html_part = MIMEText(html_content, 'html', 'utf-8')
@@ -206,7 +220,7 @@ def send_yoklama_list_to_teacher(
             server.ehlo()
             server.starttls()
             server.ehlo()
-            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.login(smtp_user, smtp_password)
             server.send_message(msg)
 
         print(f"✅ Mail gönderildi: {hoca_mail}")

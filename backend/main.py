@@ -17,6 +17,8 @@ from routers.auth import get_password_hash
 from utils.email_sender import send_yoklama_list_to_teacher
 
 from routers import auth, users, siniflar, dersler, yoklama
+from routers import auth, users, siniflar, dersler, yoklama, ayarlar  
+ 
 
 app = FastAPI(
     title="E-Yoklama API",
@@ -39,6 +41,7 @@ app.include_router(users.router)
 app.include_router(siniflar.router)
 app.include_router(dersler.router)
 app.include_router(yoklama.router)
+app.include_router(ayarlar.router)
 
 
 # ============================================
@@ -146,7 +149,8 @@ async def ders_bitis_kontrol():
                     baslangic=program.baslangic.strftime('%H:%M'),
                     bitis=program.bitis.strftime('%H:%M'),
                     katilan_ogrenciler=katilan_ogrenciler,
-                    katilmayan_ogrenciler=katilmayan_ogrenciler
+                    katilmayan_ogrenciler=katilmayan_ogrenciler,
+                    db=db
                 )
 
                 try:

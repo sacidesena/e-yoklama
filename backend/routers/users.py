@@ -8,6 +8,7 @@ from schemas import (
     KullaniciEkle, KullaniciGuncelle, KullaniciResponse, SifreGuncelle
 )
 from routers.auth import get_current_user, get_password_hash, verify_password
+from models import Kullanici, Yoklama
 
 router = APIRouter(prefix="/users", tags=["Kullanıcılar"])
 
@@ -48,6 +49,73 @@ async def list_users(
     
     users = query.offset(skip).limit(limit).all()
     return users
+
+# Öğrenci listesi
+@router.get("/ogrenciler")
+def ogrenci_listesi(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.rol != "admin":
+        raise HTTPException(status_code=403, detail="Yetkisiz")
+
+    ogrenciler = db.query(Kullanici).filter(Kullanici.rol == "ogrenci").all()
+
+    sonuc = []
+    for o in ogrenciler:
+        yoklama_sayisi = db.query(Yoklama).filter(Yoklama.ogrenci_id == o.id).count()
+        sonuc.append({
+            "id": o.id,
+            "ad": o.ad,
+            "mail": o.mail,
+            "kayit_tarihi": o.kayit_tarihi.isoformat() if hasattr(o, 'kayit_tarihi') and o.kayit_tarihi else None,
+            "fingerprint_var": o.device_fingerprint is not None,
+            "yoklama_sayisi": yoklama_sayisi,
+        })
+
+    return sonuc
+
+
+# Fingerprint sıfırla
+@router.delete("/ogrenciler/{ogrenci_id}/fingerprint")
+def fingerprint_sifirla(ogrenci_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    if current_user.rol != "admin":
+        raise HTTPException(status_code=403, detail="Yetkisiz")
+
+    ogrenci = db.query(Kullanici).filter(
+        Kullanici.id == ogrenci_id,
+        Kullanici.rol == "ogrenci"
+    ).first()
+
+    if not ogrenci:
+        raise HTTPException(status_code=404, detail="Öğrenci bulunamadı")
+
+    ogrenci.device_fingerprint = None
+    db.commit()
+
+    return {"mesaj": f"{ogrenci.ad} adlı öğrencinin telefon kaydı sıfırlandı"}
+
+@router.get("/ogrenci-no/{ogrenci_no}", response_model=KullaniciResponse)
+async def get_user_by_ogrenci_no(
+    ogrenci_no: str,
+    db: Session = Depends(get_db),
+    current_user: Kullanici = Depends(get_admin_user)
+):
+    """Öğrenci numarasına göre kullanıcı getir"""
+    user = db.query(Kullanici).filter(Kullanici.ogrenci_no == ogrenci_no).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
+    
+    return user
+
+@router.get("/rol/{rol}", response_model=List[KullaniciResponse])
+async def get_users_by_role(
+    rol: str,
+    db: Session = Depends(get_db),
+    current_user: Kullanici = Depends(get_admin_user)
+):
+    """Role göre kullanıcıları listele"""
+    users = db.query(Kullanici).filter(Kullanici.rol == rol).all()
+    return users
+
 
 @router.get("/{user_id}", response_model=KullaniciResponse)
 async def get_user(
@@ -191,20 +259,6 @@ async def delete_user(
     
     return None
 
-@router.get("/ogrenci-no/{ogrenci_no}", response_model=KullaniciResponse)
-async def get_user_by_ogrenci_no(
-    ogrenci_no: str,
-    db: Session = Depends(get_db),
-    current_user: Kullanici = Depends(get_admin_user)
-):
-    """Öğrenci numarasına göre kullanıcı getir"""
-    user = db.query(Kullanici).filter(Kullanici.ogrenci_no == ogrenci_no).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Kullanıcı bulunamadı")
-    
-    return user
-
 @router.post("/{user_id}/device-fingerprint")
 async def update_device_fingerprint(
     user_id: int,
@@ -225,12 +279,5 @@ async def update_device_fingerprint(
     
     return {"message": "Cihaz parmak izi güncellendi"}
 
-@router.get("/rol/{rol}", response_model=List[KullaniciResponse])
-async def get_users_by_role(
-    rol: str,
-    db: Session = Depends(get_db),
-    current_user: Kullanici = Depends(get_admin_user)
-):
-    """Role göre kullanıcıları listele"""
-    users = db.query(Kullanici).filter(Kullanici.rol == rol).all()
-    return users
+
+

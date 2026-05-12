@@ -32,7 +32,7 @@ const Dashboard = () => {
         <Link to="/siniflar" style={styles.card}>
           <div style={styles.icon}>🏫</div>
           <h3>Sınıf Yönetimi</h3>
-          <p>Sınıf ekle/düzenle, QR kodları oluştur</p>
+          <p>Sınıf ekle/düzenle</p>
         </Link>
 
         <Link to="/program" style={styles.card}>
@@ -41,11 +41,11 @@ const Dashboard = () => {
           <p>Haftalık ders programını yönet</p>
         </Link>
 
-        {/*<Link to="/ogrenciler" style={styles.card}>
+        {<Link to="/ogrenciler" style={styles.card}>
           <div style={styles.icon}>👥</div>
           <h3>Öğrenci Yönetimi</h3>
           <p>Öğrenci ekle/düzenle/listele</p>
-        </Link> */}
+        </Link> }
 
         <Link to="/dersler" style={styles.card}>
           <div style={styles.icon}>📚</div>
@@ -56,7 +56,13 @@ const Dashboard = () => {
         <Link to="/qr-kodlar" style={styles.card}>
           <div style={styles.icon}>📷</div>
           <h3>QR Kodlar</h3>
-          <p>Tüm QR kodları görüntüle/yazdır</p>
+          <p>Tüm QR kodları oluştur/görüntüle/yazdır</p>
+        </Link>
+
+        <Link to="/mail-ayarlari" style={styles.card}>
+          <div style={styles.icon}>📧</div>
+          <h3>Mail Ayarları</h3>
+          <p>Gönderici mail hesabını yönet</p>
         </Link>
 
         {/*<Link to="/raporlar" style={styles.card}>

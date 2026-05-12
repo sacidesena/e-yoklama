@@ -47,6 +47,7 @@ class KullaniciResponse(BaseModel):
     ogrenci_no: Optional[str] = None
     son_giris: Optional[datetime] = None
     kayit_tarihi: datetime
+    device_fingerprint: Optional[str] = None 
 
     class Config:
         from_attributes = True
@@ -191,3 +192,13 @@ class QRKodResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ===================== AYARLAR SCHEMAS =====================
+
+class MailAyarlariGuncelle(BaseModel):
+    sender_email: Optional[str] = None
+    sender_password: Optional[str] = None
+
+class MailAyarlariResponse(BaseModel):
+    sender_email: str
+    sender_password: str

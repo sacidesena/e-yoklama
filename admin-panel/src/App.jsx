@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// 👇 1. BU SATIRI EKLE (Eğer context klasörün yoksa hata verir, oluşturman lazım)
+// (Eğer context klasörün yoksa hata verir, oluşturman lazım)
 import { AuthProvider } from './context/AuthContext';
 
 import LoginPage from './pages/LoginPages'; // Dosya adın LoginPages ise böyle kalsın
@@ -16,13 +16,14 @@ import Raporlar from './pages/Raporlar';
 
 // Axios ayarlarını yükle
 import './services/axiosConfig'; 
-
 import ProtectedRoute from './components/ProtectedRoute';
+import MailAyarlari from './pages/MailAyarlari';
+
 
 function App() {
   return (
     <BrowserRouter>
-      {/* 👇 2. TÜM ROTALARI BU KAPSAYICI İÇİNE ALMALIYIZ 👇 */}
+      {/* 2. TÜM ROTALARI BU KAPSAYICI İÇİNE ALMALIYIZ */}
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -62,6 +63,8 @@ function App() {
               <QRKodlar />
             </ProtectedRoute>
           } />
+
+          <Route path="/mail-ayarlari" element={<ProtectedRoute><MailAyarlari /></ProtectedRoute>} />
           
           <Route path="/raporlar" element={
             <ProtectedRoute>
@@ -83,7 +86,7 @@ function App() {
           hideProgressBar={false}
         />
       </AuthProvider>
-      {/* 👆 KAPSAYICI BİTİŞ 👆 */}
+      {/* KAPSAYICI BİTİŞ */}
     </BrowserRouter>
   );
 }

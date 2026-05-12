@@ -192,3 +192,13 @@ class QRKodResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ===================== AYARLAR SCHEMAS =====================
+
+class MailAyarlariGuncelle(BaseModel):
+    sender_email: Optional[str] = None
+    sender_password: Optional[str] = None
+
+class MailAyarlariResponse(BaseModel):
+    sender_email: str
+    sender_password: str

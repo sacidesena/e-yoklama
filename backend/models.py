@@ -125,3 +125,9 @@ class MailLog(Base):
     gonderim_tarihi = Column(Date, nullable=False)
     gonderildi_zaman = Column(DateTime, default=datetime.utcnow)
 
+#ayarlar mail için
+class Ayarlar(Base):
+    __tablename__ = "ayarlar"
+    id = Column(Integer, primary_key=True, index=True)
+    anahtar = Column(String(100), unique=True, nullable=False)
+    deger = Column(String(500), nullable=True)

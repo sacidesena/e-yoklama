@@ -59,6 +59,12 @@ const Dashboard = () => {
           <p>Tüm QR kodları oluştur/görüntüle/yazdır</p>
         </Link>
 
+        <Link to="/mail-ayarlari" style={styles.card}>
+          <div style={styles.icon}>📧</div>
+          <h3>Mail Ayarları</h3>
+          <p>Gönderici mail hesabını yönet</p>
+        </Link>
+
         {/*<Link to="/raporlar" style={styles.card}>
           <div style={styles.icon}>📊</div>
           <h3>Raporlar</h3>

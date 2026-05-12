@@ -361,6 +361,9 @@ async def delete_program(
     if not program:
         raise HTTPException(status_code=404, detail="Program bulunamadı")
     
+    from models import MailLog
+    db.query(MailLog).filter(MailLog.program_id == program_id).delete()
+    
     db.delete(program)
     db.commit()
     

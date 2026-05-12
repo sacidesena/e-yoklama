@@ -19,10 +19,10 @@ const QRKodlar = () => {
 
       const [qrRes, sinifRes] = await Promise.all([
         fetch(`${API_URL}/yoklama/qr-kodlar`, {
-          headers: { 'Authorization': `Bearer ${token}`,'ngrok-skip-browser-warning': 'true'  }
+          headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
         }),
         fetch(`${API_URL}/siniflar/`, {
-          headers: { 'Authorization': `Bearer ${token}`,'ngrok-skip-browser-warning': 'true'  }
+          headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
         })
       ]);
 
@@ -41,7 +41,7 @@ const QRKodlar = () => {
       const token = localStorage.getItem('access_token');
       const response = await fetch(`${API_URL}/yoklama/qr-olustur/${sinifId}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`,'ngrok-skip-browser-warning': 'true'  }
+        headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
       });
 
       if (response.ok) {
@@ -64,7 +64,7 @@ const QRKodlar = () => {
       const token = localStorage.getItem('access_token');
       const response = await fetch(`${API_URL}/yoklama/qr-kodlar/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}`,'ngrok-skip-browser-warning': 'true'  }
+        headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
       });
 
       if (response.ok) {
@@ -76,9 +76,8 @@ const QRKodlar = () => {
     }
   };
 
- const printQR = (qr) => {
+  const printQR = (qr) => {
     const sinifAdi = qr.sinif_adi || getSinifAdi(qr.sinif_id);
-    // = import.meta.env.VITE_BASE_URL || `http://${window.location.hostname}:5173`;
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
@@ -157,16 +156,6 @@ const QRKodlar = () => {
               height: 380px;
               display: block;
             }
-            .url {
-              font-size: 15px;
-              font-weight: 600;
-              color: #374151;
-              letter-spacing: 1px;
-              padding: 10px 24px;
-              border: 1px solid #e5e7eb;
-              border-radius: 4px;
-              background: #f9fafb;
-            }
             .steps {
               display: flex;
               gap: 32px;
@@ -234,8 +223,6 @@ const QRKodlar = () => {
                 <img src="${qr.qr_image}" alt="QR Kod" />
               </div>
 
-              // <div class="url">🌐 ${url}</div>
-
               <div class="steps">
                 <div class="step">
                   <div class="step-num">1</div>
@@ -262,17 +249,24 @@ const QRKodlar = () => {
       </html>
     `);
     printWindow.document.close();
-};
+  };
 
   const downloadQR = (qr) => {
     if (!qr.qr_image) {
       alert('QR görsel bulunamadı');
       return;
     }
-    const link = document.createElement('a');
-    link.href = qr.qr_image;
-    link.download = `QR_${qr.sinif_adi || getSinifAdi(qr.sinif_id)}_${Date.now()}.png`;
-    link.click();
+
+    if (qr.qr_image.startsWith('data:image')) {
+      const link = document.createElement('a');
+      link.href = qr.qr_image;
+      link.download = `QR_${qr.sinif_adi || getSinifAdi(qr.sinif_id)}_${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      window.open(qr.qr_image, '_blank');
+    }
   };
 
   const getSinifAdi = (sinif_id) => {
@@ -437,27 +431,6 @@ const QRKodlar = () => {
             ))}
           </div>
         )}
-
-        {/* İstatistikler */}
-        {/*
-        <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '20px', marginTop: '24px' }}>
-          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '12px' }}>📊 İstatistikler</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#667eea' }}>{qrKodlar.length}</div>
-              <div style={{ fontSize: '14px', color: '#6b7280' }}>Toplam QR</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>{qrKodlar.filter(q => q.aktif).length}</div>
-              <div style={{ fontSize: '14px', color: '#6b7280' }}>Aktif QR</div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ef4444' }}>{qrKodlar.filter(q => !q.aktif).length}</div>
-              <div style={{ fontSize: '14px', color: '#6b7280' }}>Pasif QR</div>
-            </div>
-          </div>
-        </div>  */}
-
       </div>
     </div>
   );

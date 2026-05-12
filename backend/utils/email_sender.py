@@ -193,12 +193,12 @@ def send_yoklama_list_to_teacher(
     """
 
     try:
-        msg['Reply-To'] = smtp_user
-        msg['X-Mailer'] = 'BAİBU E-Yoklama'
+    
         msg = MIMEMultipart('mixed')
         msg['Subject'] = Header(subject, 'utf-8')
         msg['From'] = f"BAİBÜ E-Yoklama <{smtp_user}>"
         msg['To'] = hoca_mail
+        msg['Reply-To'] = smtp_user
 
         html_part = MIMEText(html_content, 'html', 'utf-8')
         msg.attach(html_part)
